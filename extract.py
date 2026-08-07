@@ -694,7 +694,8 @@ def file_to_flow(path, prefix="imp"):
     elif ext == ".pdf":
         try:
             import fitz
-            return pdf_flow(path, prefix)
+            flow, images_map = pdf_flow(path, prefix)
+            return flow, images_map, {}
         except ImportError:
             r = subprocess.run(["pdftotext", "-layout", path, "-"], capture_output=True)
             txt = r.stdout.decode("utf-8", "replace")

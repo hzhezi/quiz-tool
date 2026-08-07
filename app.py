@@ -170,6 +170,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(self._reset())
             elif parsed.path == "/api/import":
                 self._json(self._do_import(self._parse_multipart()))
+            elif parsed.path == "/api/import/preview":
+                self._json(self._preview_import(self._parse_multipart()))
             elif parsed.path == "/api/delete_source":
                 self._json(self._delete_source(self._read_json()))
             else:
@@ -225,9 +227,7 @@ class Handler(BaseHTTPRequestHandler):
                 files.append((os.path.basename(fn), part.get_payload(decode=True) or b""))
         return files
 
-    def _do_import(self, files):
-        if not files:
-            return {"error": "未收到文件"}
+    def _save_upload(self, files):
         tmp_dir = os.path.join(DATA_DIR, "tmp_import")
         os.makedirs(tmp_dir, exist_ok=True)
         saved = []
@@ -236,12 +236,37 @@ class Handler(BaseHTTPRequestHandler):
             with open(p, "wb") as f:
                 f.write(data)
             saved.append(p)
+        return saved
+
+    def _parse_import(self, saved):
+        """解析上传文件，返回 (qs, source)。"""
         question_file = saved[0]
         answer_file = saved[1] if len(saved) > 1 else None
         source = os.path.splitext(os.path.basename(question_file))[0]
         qs = extract.import_documents(question_file, answer_file, source)
         if not qs:
-            return {"error": "未能从文档中解析出题目，请检查文件格式"}
+            raise ValueError("未能从文档中解析出题目，请检查文件格式")
+        return qs, source
+
+    def _preview_import(self, files):
+        """解析但只返回统计，不保存。"""
+        if not files:
+            return {"error": "未收到文件"}
+        try:
+            qs, source = self._parse_import(self._save_upload(files))
+        except ValueError as e:
+            return {"error": str(e)}
+        return {"ok": True, "count": len(qs),
+                "with_answer": sum(1 for q in qs if q["answer"]),
+                "source": source}
+
+    def _do_import(self, files):
+        if not files:
+            return {"error": "未收到文件"}
+        try:
+            qs, source = self._parse_import(self._save_upload(files))
+        except ValueError as e:
+            return {"error": str(e)}
         max_id = max((int(q["id"][1:]) for q in QUESTIONS), default=0)
         for i, q in enumerate(qs):
             q["id"] = "Q%05d" % (max_id + 1 + i)

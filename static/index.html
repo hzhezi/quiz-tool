@@ -991,35 +991,60 @@ function openImport() {
        ② 只上传一个同时包含题目和答案的文档</p>
     <div style="margin:10px 0">
       <label style="display:block;margin-bottom:8px"><b>题目文件</b>（必选）
-        <input type="file" id="impQ" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px"></label>
+        <input type="file" id="impQ" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px" onchange="onImportFiles()"></label>
       <label style="display:block;margin-bottom:8px"><b>答案文件</b>（可选，单独文档时上传）
-        <input type="file" id="impA" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px"></label>
+        <input type="file" id="impA" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px" onchange="onImportFiles()"></label>
     </div>
     <div id="impMsg" class="hint" style="margin-bottom:10px"></div>
     <div class="actions">
       <button onclick="this.closest('.modal-mask').remove()">取消</button>
-      <button class="danger" style="background:var(--primary);border-color:var(--primary)" onclick="doImport()">开始导入</button>
+      <button id="impParse" class="danger" style="background:var(--primary);border-color:var(--primary)" onclick="doImportPreview()" disabled>解析预览</button>
+      <button id="impConfirm" class="danger" style="background:var(--green);border-color:var(--green)" onclick="doImport()" disabled>确认导入</button>
     </div>
   </div>`;
   document.body.appendChild(mask);
 }
-async function doImport() {
-  const fq = $('#impQ').files[0];
-  if (!fq) { $('#impMsg').textContent = '请选择题目文件'; return; }
-  const msg = $('#impMsg');
-  msg.textContent = '正在解析导入…';
+function onImportFiles() {
+  const ok = !!$('#impQ').files[0];
+  $('#impParse').disabled = !ok;
+  $('#impConfirm').disabled = true;
+  $('#impMsg').textContent = '';
+}
+function importForm() {
   const fd = new FormData();
-  fd.append('question', fq);
+  fd.append('question', $('#impQ').files[0]);
   const fa = $('#impA').files[0];
   if (fa) fd.append('answer', fa);
+  return fd;
+}
+async function doImportPreview() {
+  const msg = $('#impMsg');
+  msg.textContent = '正在解析…';
   try {
-    const r = await fetch('/api/import', { method: 'POST', body: fd });
+    const r = await fetch('/api/import/preview', { method: 'POST', body: importForm() });
+    const d = await r.json();
+    if (d.error) { msg.textContent = '❌ ' + d.error; $('#impConfirm').disabled = true; return; }
+    msg.innerHTML = `✅ 解析成功：将导入 <b>${d.count}</b> 题（其中 <b>${d.with_answer}</b> 题带答案）<br><span style="color:var(--muted)">请核对无误后点击「确认导入」</span>`;
+    $('#impConfirm').disabled = false;
+  } catch (e) {
+    msg.textContent = '❌ 解析失败：' + e;
+  }
+}
+async function doImport() {
+  const msg = $('#impMsg');
+  msg.textContent = '正在导入…';
+  $('#impConfirm').disabled = true;
+  try {
+    const r = await fetch('/api/import', { method: 'POST', body: importForm() });
     const d = await r.json();
     if (d.error) { msg.textContent = '❌ ' + d.error; return; }
-    msg.innerHTML = `✅ 已导入 <b>${d.count}</b> 题（其中 <b>${d.with_answer}</b> 题带答案）`;
     state.meta = await api('/api/meta');
     await refreshList();
     if (state.view === 'stats') loadStats();
+    // 导入成功自动关闭弹窗
+    const m = document.getElementById('importMask');
+    if (m) m.remove();
+    alert(`✅ 已导入 ${d.count} 题（${d.with_answer} 题带答案）`);
   } catch (e) {
     msg.textContent = '❌ 导入失败：' + e;
   }
