@@ -484,7 +484,10 @@ def extract_png_from_doc(doc_bin):
 
 
 def wmf_to_png(data, dest, width=150):
-    """用 wmf2svg + rsvg-convert 把 WMF 公式图转成 PNG。"""
+    """用 wmf2svg + rsvg-convert 把 WMF 公式图转成 PNG。
+    wmf2svg 会把 MathType 特殊符号映射为 Symbol 字体字符，但 macOS 渲染缺失导致乱码，
+    转换时删除这些 Symbol 字体的 text 元素（分数/符号本身是矢量绘制，不受影响）。
+    """
     tmp = os.path.join(TMP_DIR, "formula_%d.wmf" % os.getpid())
     with open(tmp, "wb") as f:
         f.write(data)
@@ -493,11 +496,12 @@ def wmf_to_png(data, dest, width=150):
         r1 = subprocess.run(["wmf2svg", "-o", svg, tmp], capture_output=True)
         if r1.returncode != 0:
             return False
-        # wmf2svg 输出的 svg 可能是 Latin-1 编码，转成 UTF-8 供 rsvg 解析
-        try:
-            raw = open(svg, "rb").read().decode("utf-8")
-        except UnicodeDecodeError:
-            raw = open(svg, "rb").read().decode("latin-1")
+        raw = open(svg, "rb").read().decode("latin-1")
+        # 删除 Symbol 字体中含非 ASCII 的乱码 text（MathType 特殊符号映射错误）；
+        # 保留 ASCII 的 Symbol text（如 + - 等运算符号）
+        raw = re.sub(r"<text[^>]*font-family:Symbol[^>]*>[^<]*[^\x00-\x7f][^<]*</text>",
+                     "", raw)
+        # 转成 UTF-8 供 rsvg 解析
         with open(svg, "w", encoding="utf-8") as f:
             f.write(raw)
         r2 = subprocess.run(["rsvg-convert", "-w", str(width), "-o", dest, svg],
