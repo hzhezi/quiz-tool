@@ -10,6 +10,7 @@ Extract questions from Word/PDF question banks, practice locally with wrong-ques
 | Python | Python 3 (via Homebrew or python.org) |
 | Importing `.doc` | Requires **Microsoft Word** installed |
 | PDF image support | Run `install.command` once (installs PyMuPDF) |
+| Formula / fraction display | `install.command` installs libwmf + librsvg so fractions/formulas in questions show as images |
 
 > docx / pdf / txt imports do NOT need Word; only legacy `.doc` format does.
 

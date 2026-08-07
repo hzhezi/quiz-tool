@@ -17,6 +17,16 @@ else
     python3 -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install pymupdf
 fi
 
+# 公式(WMF)转图工具：题目中的分数/公式显示需要
+if ! command -v wmf2svg >/dev/null 2>&1 || ! command -v rsvg-convert >/dev/null 2>&1; then
+    echo "Installing formula-image tools (libwmf + librsvg)…"
+    if command -v brew >/dev/null 2>&1; then
+        brew install libwmf librsvg
+    else
+        echo "⚠️ 未找到 Homebrew，公式图可能无法显示（题目文字不受影响）"
+    fi
+fi
+
 if [ -x ".venv/bin/python" ]; then
     echo "Done. Double-click start.command to launch."
 else

@@ -78,6 +78,7 @@
   .pill.del { color: var(--red); border-color: #f3c1c1; }
   .pill.del:hover { background: var(--red-bg); }
   .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 0; }
+  .inline-img { vertical-align: middle; max-height: 2.2em; margin: 0 2px; }
   .answer-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
   .card-head { display: flex; align-items: center; gap: 10px; }
   .card-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; margin-top: 10px; }
@@ -258,6 +259,7 @@ const state = {
   statsPage: 1,      // 统计页当前页码
   cardPage: 1,       // 答题卡题号分页
   cardOpen: false,   // 答题卡默认收起
+  posMap: {},        // source -> 最近浏览题号（刷题位置记忆）
   filter: { source: '', part: '', section: '', mode: 'all', kw: '' },
   noAnswerOnly: false,
 };
@@ -265,6 +267,24 @@ const state = {
 function curList() { return state.mode === 'wrong' ? state.wrongList : state.list; }
 function curIdx() { return state.mode === 'wrong' ? state.wrongIdx : state.idx; }
 function setCurIdx(i) { state.mode === 'wrong' ? (state.wrongIdx = i) : (state.idx = i); }
+
+// 记录当前试卷的浏览位置（正常刷题时）
+function savePos() {
+  if (state.mode !== 'normal') return;
+  const src = state.filter.source;
+  const q = currentQ();
+  if (src && q) state.posMap[src] = q.no;
+}
+// 切回刷题时恢复该试卷上次位置
+function restoreQuizPos() {
+  if (state.mode !== 'normal') return;
+  const src = state.filter.source;
+  const no = src ? state.posMap[src] : null;
+  if (no) {
+    const idx = state.list.findIndex(q => q.no === no);
+    if (idx >= 0) state.idx = idx;
+  }
+}
 
 function pagBar(total, page, ps, onPage) {
   const pages = Math.max(1, Math.ceil(total / ps));
@@ -308,7 +328,7 @@ function switchView(view) {
   else if (view === 'wrong') loadWrong();
   else if (view === 'problem') loadProblemView();
   else if (view === 'stats') loadStats();
-  else renderQuiz();
+  else { restoreQuizPos(); renderQuiz(); }
 }
 
 /* ---------- 筛选与列表 ---------- */
@@ -348,7 +368,7 @@ async function onFilterSrc(v) {
   state.mode = 'normal';
   state.browsePage = 1;
   await refreshList();
-  if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
+  if (state.view === 'quiz') { state.idx = 0; restoreQuizPos(); renderQuiz(); }
 }
 let kwTimer, kwComposing = false;
 function onKwStart() { kwComposing = true; }        // 输入法组合开始
@@ -415,7 +435,7 @@ function qCard(q, i) {
     <div class="head"><span class="no">${q.no}</span>
       <span class="part">${esc(q.part)}${q.section ? ' / ' + esc(q.section) : ''}</span>
       <span class="spacer" style="flex:1"></span>${statTag}</div>
-    <div class="stem">${esc(q.stem) || '（图片题）'}${img}</div>
+    <div class="stem">${renderText(q.stem) || '（图片题）'}${img}</div>
     <div class="meta">${ansTag}<span class="hint">上次选：${q.last_selected || '—'}</span></div>
   </div>`;
 }
@@ -425,7 +445,7 @@ function emptyHtml(msg) {
 }
 
 /* ---------- 刷题 ---------- */
-function openQuiz(i) { state.mode = 'normal'; state.idx = i; switchView('quiz'); }
+function openQuiz(i) { state.mode = 'normal'; state.idx = i; savePos(); switchView('quiz'); }
 function currentQ() { return curList()[curIdx()]; }
 
 function renderMaterial(mats) {
@@ -470,7 +490,7 @@ function renderQuiz() {
   const prev = list[i - 1], next = list[i + 1];
   $('#main').innerHTML = `
   <div class="filters" style="align-items:center">
-    ${isWrong ? `<span class="tag wrong" style="padding:4px 10px">错题重做</span><span class="hint">答对自动移出 · ${list.length} 题</span>`
+    ${isWrong ? `<span class="tag wrong" style="padding:4px 10px">错题重做</span><button class="pill" onclick="backToWrong()" style="padding:3px 10px">← 返回错题本</button><span class="hint">答对自动移出 · ${list.length} 题</span>`
                : `<select id="f-src" onchange="onFilterSrc(this.value)" style="max-width:200px">
                     ${sourceOptions()}
                   </select>
@@ -493,7 +513,7 @@ function renderQuiz() {
     </div>
     ${renderMaterial(q.material)}
     ${q.images.length ? `<div class="q-img-wrap">${q.images.map(i => `<img class="q-img" src="/${i}" alt="题图">`).join('')}</div>` : ''}
-    <div class="stem">${esc(q.stem) || '（本题为图片题）'}</div>
+    <div class="stem">${renderText(q.stem) || '（本题为图片题）'}</div>
     <div class="opts" id="opts">
       ${(q.options || []).map(o => {
         const key = o.slice(0, 1);
@@ -511,7 +531,7 @@ function renderQuiz() {
           }
         }
         return `<div class="opt ${cls}" data-key="${key}" ${locked ? '' : `onclick="pick('${key}')"`}>
-          <span class="key">${key}</span><span class="txt">${esc(txt)}</span></div>`;
+          <span class="key">${key}</span><span class="txt">${renderText(txt)}</span></div>`;
       }).join('') || '<div class="hint">本题无文字选项</div>'}
     </div>
     <div id="feedback">${initialFeedback(q)}</div>
@@ -574,6 +594,7 @@ function cardNav(d) {
 function jumpToIndex(idx) {
   if (idx < 0 || idx >= curList().length) return;
   setCurIdx(idx);
+  savePos();
   renderQuiz();
 }
 
@@ -601,6 +622,7 @@ function go(d) {
   const ni = curIdx() + d;
   if (ni < 0 || ni >= L.length) return;
   setCurIdx(ni);
+  savePos();
   renderQuiz();
 }
 
@@ -610,6 +632,7 @@ function jumpToNo() {
   const idx = curList().findIndex(q => q.no === n);
   if (idx >= 0) {
     setCurIdx(idx);
+    savePos();
     renderQuiz();
   } else {
     const el = $('#jumpNo');
@@ -736,7 +759,7 @@ function wrongCard(q, i) {
     <div class="head"><span class="no">${q.no}</span>
       <span class="part">${esc(q.source)} · ${esc(q.part)}</span>
       <span class="spacer" style="flex:1"></span>${ansTag}</div>
-    <div class="stem">${esc(q.stem) || '（图片题）'}${q.images.length ? ' 📷' : ''}</div>
+    <div class="stem">${renderText(q.stem) || '（图片题）'}${q.images.length ? ' 📷' : ''}</div>
   </div>`;
 }
 
@@ -775,10 +798,13 @@ function startWrongQuiz(idx) {
   if (!state.wrongList.length) return;
   state.mode = 'wrong';
   state.wrongIdx = idx >= 0 && idx < state.wrongList.length ? idx : 0;
-  state.view = 'quiz';
-  document.querySelectorAll('.nav button').forEach(b =>
-    b.classList.toggle('active', b.dataset.view === 'quiz'));
+  state.view = 'wrong';   // 保持在错题本页签，不占用刷题页签
   renderQuiz();
+}
+
+function backToWrong() {
+  state.mode = 'normal';
+  switchView('wrong');
 }
 
 /* ---------- 待完善（图片题 / 无答案题） ---------- */
@@ -825,9 +851,9 @@ function renderProblemQuiz() {
     </div>
     ${renderMaterial(q.material)}
     ${q.images.length ? `<div class="q-img-wrap">${q.images.map(i => `<img class="q-img" src="/${i}">`).join('')}</div>` : ''}
-    <div class="stem">${esc(q.stem) || '（纯图片题，无文字题干）'}</div>
+    <div class="stem">${renderText(q.stem) || '（纯图片题，无文字题干）'}</div>
     <div class="opts" style="pointer-events:none">
-      ${(q.options || []).map(o => `<div class="opt"><span class="key">${esc(o.slice(0,1))}</span><span class="txt">${esc(o.slice(3))}</span></div>`).join('') || '<div class="hint">本题无文字选项</div>'}
+      ${(q.options || []).map(o => `<div class="opt"><span class="key">${esc(o.slice(0,1))}</span><span class="txt">${renderText(o.slice(3))}</span></div>`).join('') || '<div class="hint">本题无文字选项</div>'}
     </div>
     <div class="set-answer">
       <h4>${q.has_answer ? '✅ 已有答案（可更正）' : '✏️ 设置正确答案'} <span class="hint">当前：<b>${esc(q.answer || '—')}</b></span></h4>
@@ -948,6 +974,7 @@ function continueQuiz(src, lastNo) {
   refreshList().then(() => {
     const i = state.list.findIndex(q => q.no >= lastNo);
     state.idx = i >= 0 ? i : 0;
+    state.posMap[src] = state.list[state.idx] ? state.list[state.idx].no : lastNo;
     switchView('quiz');
   });
 }
@@ -1023,6 +1050,10 @@ function esc(s) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escAttr(s) { return esc(s); }
+// 渲染含公式标记的文本：⟦img:路径⟧ → <img>
+function renderText(s) {
+  return esc(s).replace(/\u27e6img:([^\u27e7]+)\u27e7/g, '<img class="inline-img" src="/$1" alt="公式">');
+}
 
 init();
 </script>

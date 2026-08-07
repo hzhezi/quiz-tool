@@ -279,9 +279,10 @@ def split_options(raw):
 _last_no = 0
 
 
-def parse_questions(segments, source, images_map):
+def parse_questions(segments, source, images_map, formula_map=None):
     global _last_no
     questions = []
+    formula_map = formula_map or {}
     for seg in segments:
         if not seg["name"].startswith("题目"):
             continue
@@ -319,6 +320,15 @@ def parse_questions(segments, source, images_map):
 
         for item in seg["lines"]:
             if "img" in item:
+                if item["img"] in formula_map:
+                    # 公式图 → 嵌入当前题干/选项文本
+                    mark = "\u27e6img:%s\u27e7" % formula_map[item["img"]]
+                    if cur_q is not None:
+                        if raw_lines:
+                            raw_lines[-1] = raw_lines[-1] + mark
+                        else:
+                            raw_lines.append(mark)
+                    continue
                 img_path = images_map.get(item["img"])
                 if not img_path:
                     continue   # wmf 公式/符号，忽略
@@ -456,23 +466,44 @@ def extract_png_from_doc(doc_bin):
     return pngs
 
 
+def wmf_to_png(data, dest, width=150):
+    """用 wmf2svg + rsvg-convert 把 WMF 公式图转成 PNG。"""
+    tmp = os.path.join(TMP_DIR, "formula_%d.wmf" % os.getpid())
+    with open(tmp, "wb") as f:
+        f.write(data)
+    svg = tmp + ".svg"
+    try:
+        r1 = subprocess.run(["wmf2svg", "-o", svg, tmp], capture_output=True)
+        if r1.returncode != 0:
+            return False
+        r2 = subprocess.run(["rsvg-convert", "-w", str(width), "-o", dest, svg],
+                            capture_output=True)
+        return r2.returncode == 0 and os.path.exists(dest)
+    finally:
+        for p in (tmp, svg):
+            if os.path.exists(p):
+                os.remove(p)
+
+
 def extract_images(docx_path, prefix, flow=None, doc_bin=None):
-    """docx 图片复制到 IMG_DIR（加文档前缀防冲突），返回 media名->相对路径。
-    按 docx 文档顺序处理图片：PNG/JPEG 直接用；大 WMF（Word 转换导致的题图）
-    用 .doc 原始 PNG 按顺序补（doc_bin 提供），小 WMF（公式符号）忽略。
+    """docx 图片复制到 IMG_DIR，返回 (found, formula_map)。
+    found: media名->相对路径（题图：PNG/JPEG 或大 WMF 用 .doc 原始 PNG 补）
+    formula_map: media名->相对路径（小 WMF 公式图，已转 PNG）
     """
     z = zipfile.ZipFile(docx_path)
     found = {}
+    formula_map = {}
     doc_pngs = extract_png_from_doc(doc_bin) if doc_bin else []
     png_idx = 0
     WMF_BIG = 8 * 1024   # 大于此的 wmf 视为题图（公式符号仅 ~0.4KB）
 
-    def save(data, name, key=None):
+    def save(data, name, key=None, fmap=None):
         dest = os.path.join(IMG_DIR, "%s_%s" % (prefix, name))
         if not os.path.exists(dest):
             with open(dest, "wb") as fh:
                 fh.write(data)
-        found[key or os.path.basename(name)] = os.path.join("images", "%s_%s" % (prefix, name))
+        rel = os.path.join("images", "%s_%s" % (prefix, name))
+        (fmap or found)[key or os.path.basename(name)] = rel
 
     # 优先按文档顺序（flow），否则按 zip 顺序
     if flow:
@@ -487,15 +518,19 @@ def extract_images(docx_path, prefix, flow=None, doc_bin=None):
             if data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff":
                 save(data, base)
                 png_idx += 1   # 该题图在 .doc 原始图中占一个位置
-            elif data[:4] == b"\x01\x00\x09\x00" and len(data) > WMF_BIG:
-                # WMF 题图 → 用 .doc 原始 PNG 补
-                if png_idx < len(doc_pngs):
-                    save(doc_pngs[png_idx], "wmf_%s.png" % base, key=base)
-                    png_idx += 1
+            elif data[:4] == b"\x01\x00\x09\x00":
+                if len(data) > WMF_BIG:
+                    # WMF 题图 → 用 .doc 原始 PNG 补
+                    if png_idx < len(doc_pngs):
+                        save(doc_pngs[png_idx], "wmf_%s.png" % base, key=base)
+                        png_idx += 1
                 else:
-                    continue
+                    # 小 WMF 公式图 → 转 PNG 嵌入题干/选项
+                    dest = os.path.join(IMG_DIR, "%s_formula_%s.png" % (prefix, base))
+                    if not os.path.exists(dest) and wmf_to_png(data, dest):
+                        formula_map[base] = os.path.join("images", "%s_formula_%s.png" % (prefix, base))
             else:
-                continue   # 小 wmf 公式符号
+                continue
     else:
         for n in z.namelist():
             if "media/" in n:
@@ -506,7 +541,7 @@ def extract_images(docx_path, prefix, flow=None, doc_bin=None):
                     continue
                 if data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff":
                     save(data, base)
-    return found
+    return found, formula_map
 
 
 def textutil_text(doc):
@@ -652,8 +687,8 @@ def file_to_flow(path, prefix="imp"):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".docx":
         flow = read_docx_flow(path)
-        images_map = extract_images(path, prefix, flow)
-        return flow, images_map
+        images_map, formula_map = extract_images(path, prefix, flow)
+        return flow, images_map, formula_map
     if ext == ".doc":
         txt = textutil_text(path)
     elif ext == ".pdf":
@@ -668,7 +703,7 @@ def file_to_flow(path, prefix="imp"):
             txt = f.read()
     else:
         raise ValueError("不支持的文件格式：%s" % ext)
-    return text_to_flow(txt), {}
+    return text_to_flow(txt), {}, {}
 
 
 def convert_to_docx(path):
@@ -717,9 +752,9 @@ def import_documents(question_path, answer_path=None, source=None):
         segments = split_segments(flow)
         prefix = re.sub(r"\s+", "", os.path.basename(question_path))[:20]
         doc_bin = open(question_path, "rb").read() if ext == ".doc" else None
-        images_map = extract_images(docx, prefix, flow, doc_bin)
+        images_map, formula_map = extract_images(docx, prefix, flow, doc_bin)
         _last_no = 0
-        qs = parse_questions(segments, source or os.path.basename(question_path), images_map)
+        qs = parse_questions(segments, source or os.path.basename(question_path), images_map, formula_map)
         # textutil 补齐 docx 丢失的公式题
         txt = textutil_text(question_path)
         tlines = [normalize(l) for l in txt.splitlines() if normalize(l)]
@@ -729,12 +764,12 @@ def import_documents(question_path, answer_path=None, source=None):
         qs = merge_fallback(qs, fb)
     else:
         prefix = re.sub(r"\s+", "", os.path.basename(question_path))[:20]
-        flow, images_map = file_to_flow(question_path, prefix)
+        flow, images_map, formula_map = file_to_flow(question_path, prefix)
         segments = split_segments(flow)
         _last_no = 0
-        qs = parse_questions(segments, source or os.path.basename(question_path), images_map)
+        qs = parse_questions(segments, source or os.path.basename(question_path), images_map, formula_map)
     if answer_path:
-        aflow, _ = file_to_flow(answer_path, "imp")
+        aflow, _, _ = file_to_flow(answer_path, "imp")
         asegs = split_segments(aflow)
         if not any(s["name"].startswith("答案") for s in asegs):
             # 独立答案文档：无答案区标题，整体当作答案区解析
@@ -775,8 +810,8 @@ def main():
         segments = split_segments(flow)
         prefix = re.sub(r"\s+", "", name).replace(".doc", "")[:20]
         doc_bin = open(doc, "rb").read()
-        images_map = extract_images(docx, prefix, flow, doc_bin)
-        qs = parse_questions(segments, name, images_map)
+        images_map, formula_map = extract_images(docx, prefix, flow, doc_bin)
+        qs = parse_questions(segments, name, images_map, formula_map)
         # 补齐 docx 丢失的公式题
         txt = textutil_text(doc)
         tlines = [normalize(l) for l in txt.splitlines() if normalize(l)]
