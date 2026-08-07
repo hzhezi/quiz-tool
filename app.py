@@ -294,8 +294,8 @@ class Handler(BaseHTTPRequestHandler):
             ok = la["correct"] if la else None
             if mode == "wrong" and ok != 0:
                 continue
-            if mode == "noanswer" and get_answer(q)[0]:
-                continue
+            if mode == "noanswer" and la is not None:
+                continue   # 未作答 = 没有作答记录的题
             if mode == "right" and ok != 1:
                 continue
             if mode == "problem":

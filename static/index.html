@@ -292,8 +292,9 @@ function renderFilters() {
     <select id="f-src" onchange="onFilterSrc(this.value)">
       ${sourceOptions()}
     </select>
-    <input id="f-kw" placeholder="搜索题干…" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:150px"
-           oninput="debouncedKw()">
+    <input id="f-kw" value="${escAttr(f.kw)}" placeholder="搜索题干…" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:150px"
+           oncompositionstart="onKwStart()" oncompositionend="onKwEnd()" oninput="onKwInput()">
+    ${f.kw ? `<button class="pill" onclick="clearKw()" style="padding:3px 8px" title="清空搜索">✕</button>` : ''}
     <div class="spacer"></div>
     <button class="pill ${f.mode==='all'?'active':''}" onclick="setMode('all')">全部</button>
     <button class="pill ${f.mode==='noanswer'?'active':''}" onclick="setMode('noanswer')">未作答</button>
@@ -313,10 +314,18 @@ async function onFilterSrc(v) {
   await refreshList();
   if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
 }
-let kwTimer;
+let kwTimer, kwComposing = false;
+function onKwStart() { kwComposing = true; }        // 输入法组合开始
+function onKwEnd() { kwComposing = false; debouncedKw(); }   // 选字完成，搜索
+function onKwInput() { if (!kwComposing) debouncedKw(); }    // 非组合期间输入即搜索
 function debouncedKw() {
   clearTimeout(kwTimer);
   kwTimer = setTimeout(() => { state.filter.kw = $('#f-kw').value; refreshList(); }, 300);
+}
+function clearKw() {
+  state.filter.kw = '';
+  const kw = $('#f-kw'); if (kw) kw.value = '';
+  refreshList();
 }
 
 async function refreshList() {
@@ -340,6 +349,9 @@ function renderBrowse() {
   <div class="qlist">
     ${state.list.map((q, i) => qCard(q, i)).join('') || emptyHtml('题库为空')}
   </div>`;
+  // 恢复筛选状态（下拉框 / 搜索框）
+  const sf = $('#f-src'); if (sf) sf.value = state.filter.source;
+  const kw = $('#f-kw'); if (kw) kw.value = state.filter.kw;
 }
 
 function qCard(q, i) {
