@@ -684,6 +684,7 @@ function renderSetArea() {
   const q = currentQ();
   const setArea = $('#setArea');
   if (!setArea) return;
+  if (state.mode === 'wrong') { setArea.innerHTML = ''; return; }   // 错题重做不显示答案区，避免泄题
   if (!q.attempted) { setArea.innerHTML = ''; return; }   // 作答前不显示答案，避免泄题
   const cur = q.answer || '';
   const optsRow = (q.options && q.options.length) ? q.options.map(o =>
