@@ -179,6 +179,7 @@
   .set-answer .save:hover { filter: brightness(1.05); }
 
   .quiz-nav { display: flex; justify-content: space-between; margin-top: 18px; }
+  .quiz-nav.top { margin-top: 0; margin-bottom: 20px; }
   .quiz-nav button {
     padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border);
     background: var(--card); cursor: pointer; font-size: 14px;
@@ -482,6 +483,10 @@ function renderQuiz() {
   </div>
   ${renderAnswerCard(list, i)}
   <div class="quiz-area">
+    <div class="quiz-nav top">
+      <button ${prev ? '' : 'disabled'} onclick="go(-1)">← 上一题</button>
+      <button ${next ? '' : 'disabled'} onclick="go(1)">下一题 →</button>
+    </div>
     <div class="quiz-head">
       <span class="no" style="background:var(--primary-bg);color:var(--primary);font-weight:600;padding:2px 8px;border-radius:6px;font-size:12px">第${q.no}题</span>
       <span class="hint">${esc(q.source)} · ${esc(q.part)}${q.section ? ' · ' + esc(q.section) : ''}</span>
@@ -511,10 +516,6 @@ function renderQuiz() {
     </div>
     <div id="feedback">${initialFeedback(q)}</div>
     <div id="setArea"></div>
-    <div class="quiz-nav">
-      <button ${prev ? '' : 'disabled'} onclick="go(-1)">← 上一题</button>
-      <button ${next ? '' : 'disabled'} onclick="go(1)">下一题 →</button>
-    </div>
   </div>`;
   if (!isWrong) { const sf = $('#f-src'); if (sf) sf.value = state.filter.source; }
   renderSetArea();
