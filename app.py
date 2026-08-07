@@ -370,8 +370,16 @@ class Handler(BaseHTTPRequestHandler):
             ok = sum(1 for q in lst if (a := seen.get(q["id"])) and a["correct"] == 1)
             att = sum(1 for q in lst if q["id"] in seen)
             ans = sum(1 for q in lst if get_answer(q)[0])
+            # 上次作答位置：该试卷最近一次作答的题号
+            last_no = None
+            latest_ts = -1
+            for q in lst:
+                a = seen.get(q["id"])
+                if a and a["ts"] > latest_ts:
+                    latest_ts = a["ts"]
+                    last_no = q["no"]
             by_src[src] = {"total": n, "attempted": att, "correct": ok,
-                           "has_answer": ans}
+                           "has_answer": ans, "last_no": last_no}
         self._json({
             "total": total, "attempted": attempted, "correct": correct,
             "wrong_count": len(wrong_ids), "has_answer": has_ans,

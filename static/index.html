@@ -230,9 +230,18 @@ const state = {
   list: [],          // 当前列表
   listTotal: 0,
   idx: 0,            // 当前题索引
+  mode: 'normal',    // 刷题列表来源：'normal'=题库 | 'wrong'=错题重做
+  wrongList: [],     // 错题重做列表
+  wrongIdx: 0,
+  probList: [],      // 待完善列表
+  probIdx: 0,
   filter: { source: '', part: '', section: '', mode: 'all', kw: '' },
   noAnswerOnly: false,
 };
+
+function curList() { return state.mode === 'wrong' ? state.wrongList : state.list; }
+function curIdx() { return state.mode === 'wrong' ? state.wrongIdx : state.idx; }
+function setCurIdx(i) { state.mode === 'wrong' ? (state.wrongIdx = i) : (state.idx = i); }
 
 async function api(url, opts) {
   const r = await fetch(url, opts);
@@ -241,6 +250,8 @@ async function api(url, opts) {
 
 async function init() {
   state.meta = await api('/api/meta');
+  const keys = Object.keys(state.meta);
+  if (keys.length) state.filter.source = keys[0];   // 默认第一套试卷
   bindNav();
   await refreshList();
   switchView('stats');   // 默认进入统计页
@@ -248,7 +259,10 @@ async function init() {
 
 function bindNav() {
   document.querySelectorAll('.nav button').forEach(b => {
-    b.onclick = () => { switchView(b.dataset.view); };
+    b.onclick = () => {
+      if (b.dataset.view === 'quiz') state.mode = 'normal';   // 导航到刷题=正常题库
+      switchView(b.dataset.view);
+    };
   });
 }
 
@@ -295,6 +309,7 @@ function setMode(m) {
 }
 async function onFilterSrc(v) {
   state.filter.source = v; state.filter.part = ''; state.filter.section = '';
+  state.mode = 'normal';
   await refreshList();
   if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
 }
@@ -350,8 +365,8 @@ function emptyHtml(msg) {
 }
 
 /* ---------- 刷题 ---------- */
-function openQuiz(i) { state.idx = i; switchView('quiz'); }
-function currentQ() { return state.list[state.idx]; }
+function openQuiz(i) { state.mode = 'normal'; state.idx = i; switchView('quiz'); }
+function currentQ() { return curList()[curIdx()]; }
 
 function renderMaterial(mats) {
   if (!mats || !mats.length) return '';
@@ -379,28 +394,28 @@ function renderMaterial(mats) {
 }
 
 function renderQuiz() {
-  const list = state.list;
+  const list = curList();
+  const isWrong = state.mode === 'wrong';
   if (!list.length) {
     $('#main').innerHTML = `<div class="filters" style="justify-content:space-between">
-      <div>当前筛选没有题目</div>
-      <button class="pill active" onclick="switchView('browse')">去题库选择</button></div>
-      <div class="empty"><div class="big">📖</div>请先到「题库」选择题目，或到「设答案」完善答案后刷题</div>`;
+      <div>${isWrong ? '错题已全部刷完 🎉' : '当前筛选没有题目'}</div>
+      ${isWrong ? `<button class="pill active" onclick="switchView('wrong')">返回错题本</button>`
+                 : `<button class="pill active" onclick="switchView('browse')">去题库选择</button>`}</div>
+      <div class="empty"><div class="big">${isWrong ? '🎉' : '📖'}</div>${isWrong ? '没有错题了，太棒了！' : '请先到「题库」选择题目'}</div>`;
     return;
   }
-  if (state.idx >= list.length) state.idx = list.length - 1;
+  let i = curIdx();
+  if (i >= list.length) { setCurIdx(list.length - 1); i = curIdx(); }
   const q = currentQ();
-  const prev = list[state.idx - 1], next = list[state.idx + 1];
+  const prev = list[i - 1], next = list[i + 1];
   $('#main').innerHTML = `
   <div class="filters" style="align-items:center">
-    <select id="f-src" onchange="onFilterSrc(this.value)" style="max-width:200px">
-      ${sourceOptions()}
-    </select>
+    ${isWrong ? `<span class="tag wrong" style="padding:4px 10px">错题重做</span><span class="hint">答对自动移出 · ${list.length} 题</span>`
+               : `<select id="f-src" onchange="onFilterSrc(this.value)" style="max-width:200px">
+                    ${sourceOptions()}
+                  </select>`}
     <div class="spacer"></div>
-    <span class="hint" style="display:inline-flex;align-items:center;gap:6px">
-      第 <input id="jumpNo" type="number" min="1" placeholder="${list.length ? Math.min(list[0].no, list[list.length-1].no) + '~' + Math.max(list[0].no, list[list.length-1].no) : ''}" style="width:70px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px" onkeydown="if(event.key==='Enter')jumpToNo()"> 题
-      <button class="pill active" style="padding:3px 10px" onclick="jumpToNo()">跳转</button>
-      <span>· ${state.idx + 1} / ${list.length} · 共${state.listTotal}题</span>
-    </span>
+    <span class="hint">${i + 1} / ${list.length}</span>
   </div>
   <div class="quiz-area">
     <div class="quiz-head">
@@ -415,7 +430,7 @@ function renderQuiz() {
         const key = o.slice(0, 1);
         const txt = o.slice(3).trim();
         let cls = '', locked = false;
-        if (q.attempted) {
+        if (q.attempted && state.mode !== 'wrong') {
           locked = true;
           if (q.last_correct === 1) {
             if (key === q.answer) cls = 'correct';
@@ -437,7 +452,7 @@ function renderQuiz() {
       <button ${next ? '' : 'disabled'} onclick="go(1)">下一题 →</button>
     </div>
   </div>`;
-  const sf = $('#f-src'); if (sf) sf.value = state.filter.source;
+  if (!isWrong) { const sf = $('#f-src'); if (sf) sf.value = state.filter.source; }
   renderSetArea();
 }
 
@@ -450,6 +465,10 @@ function initialFeedback(q) {
     return `<div class="feedback right"><b>✓ 已答对</b>${q.explanation ? `<div class="expl">${esc(q.explanation)}</div>` : ''}</div>`;
   }
   if (q.last_correct === 0) {
+    if (state.mode === 'wrong') {
+      // 错题重做：不泄露答案，提示重做
+      return `<div class="feedback wrong"><b>✗ 上次答错</b>　请重新作答（答对自动移出错题本）</div>`;
+    }
     return `<div class="feedback wrong"><b>✗ 答错</b>　正确答案：<b>${esc(q.answer)}</b>${q.explanation ? `<div class="expl">${esc(q.explanation)}</div>` : ''}
       <div style="margin-top:8px"><button class="pill active" onclick="redo()">重新作答</button></div></div>`;
   }
@@ -457,18 +476,19 @@ function initialFeedback(q) {
 }
 
 function go(d) {
-  const ni = state.idx + d;
-  if (ni < 0 || ni >= state.list.length) return;
-  state.idx = ni;
+  const L = curList();
+  const ni = curIdx() + d;
+  if (ni < 0 || ni >= L.length) return;
+  setCurIdx(ni);
   renderQuiz();
 }
 
 function jumpToNo() {
   const n = parseInt($('#jumpNo').value, 10);
   if (!n) return;
-  const idx = state.list.findIndex(q => q.no === n);
+  const idx = curList().findIndex(q => q.no === n);
   if (idx >= 0) {
-    state.idx = idx;
+    setCurIdx(idx);
     renderQuiz();
   } else {
     const el = $('#jumpNo');
@@ -488,7 +508,7 @@ function redo() {
 
 function pick(key) {
   const q = currentQ();
-  if (q.attempted) return;   // 已作答锁定
+  if (q.attempted && state.mode !== 'wrong') return;   // 已作答锁定（错题重做可再答）
   if (!q.options || !q.options.length) return;
   api('/api/attempt', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -499,6 +519,16 @@ function pick(key) {
     q.last_correct = res.correct === null ? null : (res.correct ? 1 : 0);
     q.answer = res.answer || q.answer;
     q.has_answer = res.has_answer;
+    // 错题重做：答对自动移出错题列表
+    if (state.mode === 'wrong' && res.correct === true) {
+      state.wrongList.splice(curIdx(), 1);
+      const done = state.wrongList.length === 0;
+      if (curIdx() >= state.wrongList.length) state.wrongIdx = state.wrongList.length - 1;
+      renderQuiz();
+      const fb = $('#feedback');
+      if (fb) fb.innerHTML = `<div class="feedback right"><b>${done ? '🎉 错题全部刷完！' : '✓ 已答对，已移出错题本'}</b></div>`;
+      return;
+    }
     showFeedback(res, key);
     renderSetArea();
   });
@@ -576,25 +606,50 @@ function saveAnswer() {
 function showSaveMsg(m) { const el = $('#saveMsg'); if (el) el.textContent = m; }
 
 /* ---------- 错题本 ---------- */
+function wrongCard(q, i) {
+  const ansTag = !q.has_answer ? '<span class="tag ans-no">未设答案</span>'
+    : '<span class="tag ans-yes">有答案</span>';
+  return `
+  <div class="qcard" onclick="startWrongQuiz(${i})">
+    <div class="head"><span class="no">${q.no}</span>
+      <span class="part">${esc(q.source)} · ${esc(q.part)}</span>
+      <span class="spacer" style="flex:1"></span>${ansTag}</div>
+    <div class="stem">${esc(q.stem) || '（图片题）'}${q.images.length ? ' 📷' : ''}</div>
+  </div>`;
+}
+
 async function loadWrong() {
   const d = await api('/api/wrong');
-  state.list = d.questions;
-  state.idx = 0;
+  state.wrongList = d.questions;   // 不覆盖刷题列表
+  state.wrongIdx = 0;
   $('#main').innerHTML = `
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <h2 style="font-size:18px">错题本 <span class="hint" style="font-weight:400">（最近一次作答错误的题目，答对后自动移出）</span></h2>
+    <h2 style="font-size:18px">错题本 <span class="hint" style="font-weight:400">（最近一次作答错误的题目，重做答对后自动移出）</span></h2>
     <span class="tag wrong">${d.total} 题</span>
   </div>
+  ${d.total ? `<div style="margin-bottom:12px">
+    <button class="pill active" onclick="startWrongQuiz(0)" style="padding:7px 18px">▶ 重做全部错题</button>
+  </div>` : ''}
   <div class="qlist">
-    ${d.questions.map((q, i) => qCard(q, i)).join('') || emptyHtml('太棒了，暂无错题 🎉')}
+    ${d.questions.map((q, i) => wrongCard(q, i)).join('') || emptyHtml('太棒了，暂无错题 🎉')}
   </div>`;
+}
+
+function startWrongQuiz(idx) {
+  if (!state.wrongList.length) return;
+  state.mode = 'wrong';
+  state.wrongIdx = idx >= 0 && idx < state.wrongList.length ? idx : 0;
+  state.view = 'quiz';
+  document.querySelectorAll('.nav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === 'quiz'));
+  renderQuiz();
 }
 
 /* ---------- 待完善（图片题 / 无答案题） ---------- */
 async function loadProblemView() {
   const d = await api('/api/questions?mode=problem&limit=5000');
-  state.list = d.questions;
-  state.idx = 0;
+  state.probList = d.questions;
+  state.probIdx = 0;
   if (!d.total) {
     $('#main').innerHTML = emptyHtml('没有待完善的题 🎉');
     return;
@@ -613,13 +668,13 @@ async function loadProblemView() {
   renderProblemQuiz();
 }
 function probNav(d) {
-  const n = state.idx + d;
-  if (n < 0 || n >= state.list.length) return;
-  state.idx = n;
+  const n = state.probIdx + d;
+  if (n < 0 || n >= state.probList.length) return;
+  state.probIdx = n;
   renderProblemQuiz();
 }
 function renderProblemQuiz() {
-  const q = state.list[state.idx];
+  const q = state.probList[state.probIdx];
   const box = $('#ansQuiz');
   if (!box) return;
   const cur = q.answer || '';
@@ -630,7 +685,7 @@ function renderProblemQuiz() {
   box.innerHTML = `
     <div class="quiz-head">
       <span class="no" style="background:var(--primary-bg);color:var(--primary);font-weight:600;padding:2px 8px;border-radius:6px;font-size:12px">第${q.no}题</span>
-      <span class="hint">${state.idx + 1} / ${state.list.length} · ${esc(q.source)} · ${esc(q.part)}${q.section ? ' · ' + esc(q.section) : ''}</span>
+      <span class="hint">${state.probIdx + 1} / ${state.probList.length} · ${esc(q.source)} · ${esc(q.part)}${q.section ? ' · ' + esc(q.section) : ''}</span>
     </div>
     ${renderMaterial(q.material)}
     ${q.images.length ? `<div class="q-img-wrap">${q.images.map(i => `<img class="q-img" src="/${i}">`).join('')}</div>` : ''}
@@ -648,18 +703,18 @@ function renderProblemQuiz() {
   pickedKey = '';
 }
 function problemSave() {
-  const q = state.list[state.idx];
+  const q = state.probList[state.probIdx];
   const answer = pickedKey || q.answer || '';
   if (!answer) { const m = $('#ansMsg'); if (m) m.textContent = '请先选择答案'; return; }
   api('/api/answer', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ id: q.id, answer, explanation: $('#aexpl').value })
   }).then(() => {
-    state.list.splice(state.idx, 1);
+    state.probList.splice(state.probIdx, 1);
     const c = $('#probCount');
-    if (c) c.textContent = '剩余 ' + state.list.length + ' 题';
-    if (!state.list.length) { loadProblemView(); return; }
-    if (state.idx >= state.list.length) state.idx = state.list.length - 1;
+    if (c) c.textContent = '剩余 ' + state.probList.length + ' 题';
+    if (!state.probList.length) { loadProblemView(); return; }
+    if (state.probIdx >= state.probList.length) state.probIdx = state.probList.length - 1;
     renderProblemQuiz();
   });
 }
@@ -685,7 +740,7 @@ async function loadStats() {
       <td style="color:${r >= 60 ? 'var(--green)' : r > 0 ? 'var(--amber)' : 'var(--red)'}">${s.attempted ? r + '%' : '—'}</td>
       <td style="white-space:nowrap">
         <span class="op-btns">
-          <button class="pill active" onclick="startQuiz('${escAttr(src)}')">开始刷题</button>
+          <button class="pill active" onclick="${s.attempted ? 'continueQuiz(\'' + escAttr(src) + '\',' + (s.last_no || 1) + ')' : 'startQuiz(\'' + escAttr(src) + '\')'}">${s.attempted ? '继续刷题' : '开始刷题'}</button>
           <button class="pill del" onclick="confirmDeleteSource('${escAttr(src)}')">删除</button>
         </span>
       </td>
@@ -731,8 +786,18 @@ async function doDeleteSource(src) {
 }
 
 function startQuiz(src) {
+  state.mode = 'normal';
   state.filter.source = src;
   refreshList().then(() => { state.idx = 0; switchView('quiz'); });
+}
+function continueQuiz(src, lastNo) {
+  state.mode = 'normal';
+  state.filter.source = src;
+  refreshList().then(() => {
+    const i = state.list.findIndex(q => q.no >= lastNo);
+    state.idx = i >= 0 ? i : 0;
+    switchView('quiz');
+  });
 }
 
 /* ---------- 导入题库 ---------- */
