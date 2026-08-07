@@ -221,6 +221,11 @@
   .modal .actions { display: flex; justify-content: flex-end; gap: 10px; }
   .modal .actions button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; background: var(--card); }
   .modal .actions .danger { background: var(--red); color: #fff; border-color: var(--red); }
+  .file-upload { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+  .file-upload input { display: none; }
+  .file-btn { background: var(--primary-bg); color: var(--primary); border: 1px dashed var(--primary); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; transition: background .15s, color .15s; }
+  .file-btn:hover { background: var(--primary); color: #fff; }
+  .file-name { color: var(--muted); font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -259,7 +264,7 @@ const state = {
   statsPage: 1,      // 统计页当前页码
   cardPage: 1,       // 答题卡题号分页
   cardOpen: false,   // 答题卡默认收起
-  posMap: {},        // source -> 最近浏览题号（刷题位置记忆）
+  posMap: JSON.parse(localStorage.getItem('quizPos') || '{}'),   // source -> 最近浏览题号（持久化）
   filter: { source: '', part: '', section: '', mode: 'all', kw: '' },
   noAnswerOnly: false,
 };
@@ -268,12 +273,15 @@ function curList() { return state.mode === 'wrong' ? state.wrongList : state.lis
 function curIdx() { return state.mode === 'wrong' ? state.wrongIdx : state.idx; }
 function setCurIdx(i) { state.mode === 'wrong' ? (state.wrongIdx = i) : (state.idx = i); }
 
-// 记录当前试卷的浏览位置（正常刷题时）
+// 记录当前试卷的浏览位置（正常刷题时），持久化到 localStorage
 function savePos() {
   if (state.mode !== 'normal') return;
   const src = state.filter.source;
   const q = currentQ();
-  if (src && q) state.posMap[src] = q.no;
+  if (src && q) {
+    state.posMap[src] = q.no;
+    try { localStorage.setItem('quizPos', JSON.stringify(state.posMap)); } catch (e) {}
+  }
 }
 // 切回刷题时恢复该试卷上次位置
 function restoreQuizPos() {
@@ -990,10 +998,16 @@ function openImport() {
     <p>① 上传「题目文件」+「答案文件」（答案可单独一个文档）<br>
        ② 只上传一个同时包含题目和答案的文档</p>
     <div style="margin:10px 0">
-      <label style="display:block;margin-bottom:8px"><b>题目文件</b>（必选）
-        <input type="file" id="impQ" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px" onchange="onImportFiles()"></label>
-      <label style="display:block;margin-bottom:8px"><b>答案文件</b>（可选，单独文档时上传）
-        <input type="file" id="impA" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px" onchange="onImportFiles()"></label>
+      <label class="file-upload">
+        <input type="file" id="impQ" accept=".doc,.docx,.pdf,.txt,.md" onchange="onImportFiles()">
+        <span class="file-btn">📄 选择题目文件</span>
+        <span class="file-name" id="impQName">未选择（必选）</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" id="impA" accept=".doc,.docx,.pdf,.txt,.md" onchange="onImportFiles()">
+        <span class="file-btn">📄 选择答案文件</span>
+        <span class="file-name" id="impAName">可选（单独文档时选）</span>
+      </label>
     </div>
     <div id="impMsg" class="hint" style="margin-bottom:10px"></div>
     <div class="actions">
@@ -1006,7 +1020,12 @@ function openImport() {
 function onImportFiles() {
   $('#impConfirm').disabled = true;
   $('#impMsg').textContent = '';
-  if ($('#impQ').files[0]) doImportPreview();   // 选好文件后自动解析
+  const fq = $('#impQ').files[0];
+  const fa = $('#impA').files[0];
+  const qName = $('#impQName'), aName = $('#impAName');
+  if (qName) qName.textContent = fq ? fq.name : '未选择（必选）';
+  if (aName) aName.textContent = fa ? fa.name : '可选（单独文档时选）';
+  if (fq) doImportPreview();   // 选好题目文件后自动解析
 }
 function importForm() {
   const fd = new FormData();
@@ -1073,9 +1092,12 @@ function esc(s) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escAttr(s) { return esc(s); }
-// 渲染含公式标记的文本：⟦img:路径⟧ → <img>
+// 渲染公式/上下标标记：⟦img:路径⟧→图、⟦sup⟧…⟦/sup⟧→上标、⟦sub⟧…⟦/sub⟧→下标
 function renderText(s) {
-  return esc(s).replace(/\u27e6img:([^\u27e7]+)\u27e7/g, '<img class="inline-img" src="/$1" alt="公式">');
+  return esc(s)
+    .replace(/\u27e6img:([^\u27e7]+)\u27e7/g, '<img class="inline-img" src="/$1" alt="公式">')
+    .replace(/\u27e6sup\u27e7/g, '<sup>').replace(/\u27e6\/sup\u27e7/g, '</sup>')
+    .replace(/\u27e6sub\u27e7/g, '<sub>').replace(/\u27e6\/sub\u27e7/g, '</sub>');
 }
 
 init();

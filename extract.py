@@ -105,11 +105,28 @@ def end(tag):
 def _iter_pieces(el, rid2file):
     pieces = []
     pos = 0
+    W_NS_VAL = "{%s}val" % W_NS["w"]
+    RPR = end("w:rPr")
+    VALIGN = end("w:vertAlign")
+    cur_va = None
     for child in el.iter():
         tag = child.tag
-        if tag == end("w:t"):
+        if tag == end("w:r"):
+            va = None
+            rpr = child.find(RPR)
+            if rpr is not None:
+                vaEl = rpr.find(VALIGN)
+                if vaEl is not None:
+                    va = vaEl.get(W_NS_VAL)
+            cur_va = va
+        elif tag == end("w:t"):
             if child.text:
-                pieces.append((pos, "text", child.text))
+                txt = child.text
+                if cur_va == "superscript":
+                    txt = "\u27e6sup\u27e7" + txt + "\u27e6/sup\u27e7"
+                elif cur_va == "subscript":
+                    txt = "\u27e6sub\u27e7" + txt + "\u27e6/sub\u27e7"
+                pieces.append((pos, "text", txt))
             pos += 1
         elif tag in ("{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline",
                      "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}anchor"):
@@ -144,11 +161,11 @@ def walk_paragraph(p, rid2file):
         if kind == "text":
             buf += val
         else:
-            if buf.strip():
+            if buf:
                 out.append({"kind": "text", "text": buf})
                 buf = ""
             out.append({"kind": "image", "file": val})
-    if buf.strip():
+    if buf:
         out.append({"kind": "text", "text": buf})
     return out
 
@@ -476,6 +493,13 @@ def wmf_to_png(data, dest, width=150):
         r1 = subprocess.run(["wmf2svg", "-o", svg, tmp], capture_output=True)
         if r1.returncode != 0:
             return False
+        # wmf2svg 输出的 svg 可能是 Latin-1 编码，转成 UTF-8 供 rsvg 解析
+        try:
+            raw = open(svg, "rb").read().decode("utf-8")
+        except UnicodeDecodeError:
+            raw = open(svg, "rb").read().decode("latin-1")
+        with open(svg, "w", encoding="utf-8") as f:
+            f.write(raw)
         r2 = subprocess.run(["rsvg-convert", "-w", str(width), "-o", dest, svg],
                             capture_output=True)
         return r2.returncode == 0 and os.path.exists(dest)
@@ -527,7 +551,9 @@ def extract_images(docx_path, prefix, flow=None, doc_bin=None):
                 else:
                     # 小 WMF 公式图 → 转 PNG 嵌入题干/选项
                     dest = os.path.join(IMG_DIR, "%s_formula_%s.png" % (prefix, base))
-                    if not os.path.exists(dest) and wmf_to_png(data, dest):
+                    if not os.path.exists(dest):
+                        wmf_to_png(data, dest)
+                    if os.path.exists(dest):
                         formula_map[base] = os.path.join("images", "%s_formula_%s.png" % (prefix, base))
             else:
                 continue

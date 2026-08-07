@@ -5466,7 +5466,7 @@
   ],
   "images": [],
   "answer": "B",
-  "explanation": "2=13+1，7=23-1，28=33+1，63=43-1，126=53+1，215=63-1。",
+  "explanation": "2=1⟦sup⟧3⟦/sup⟧+1，7=2⟦sup⟧3⟦/sup⟧-1，28=3⟦sup⟧3⟦/sup⟧+1，63=4⟦sup⟧3⟦/sup⟧-1，126=5⟦sup⟧3⟦/sup⟧+1，215=6⟦sup⟧3⟦/sup⟧-1。",
   "source": "招聘考试行测专项练习 (七).doc",
   "no": 32
  },
@@ -5729,7 +5729,7 @@
   "id": "Q00183",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "的值是（ ）。",
+  "stem": "⟦img:images/招聘考试行测专项练习(七)_formula_image21.wmf.png⟧ 的值是（ ）。",
   "options": [
    "A. ⟦img:images/招聘考试行测专项练习(七)_formula_image22.wmf.png⟧",
    "B. ⟦img:images/招聘考试行测专项练习(七)_formula_image23.wmf.png⟧",
@@ -12575,7 +12575,7 @@
   "id": "Q00436",
   "part": "第二部分数量关系",
   "section": "二、数学运算：共15题",
-  "stem": "的值是（ ）。",
+  "stem": "⟦img:images/招聘考试行测专项练习(九)_formula_image15.wmf.png⟧ 的值是（ ）。",
   "options": [
    "A. 4",
    "B. ⟦img:images/招聘考试行测专项练习(九)_formula_image16.wmf.png⟧",
@@ -13822,10 +13822,10 @@
   "section": "",
   "stem": "光是迄今为止人们发现的传播速度最快的物质，从地球上向月亮发射一束激光，大约",
   "options": [
-   "A. 3.84×106m",
-   "B. 3.84×107m",
-   "C. 3.84×108m",
-   "D. 3.84×108Rm"
+   "A. 3.84×10⟦sup⟧6⟦/sup⟧m",
+   "B. 3.84×10⟦sup⟧7⟦/sup⟧m",
+   "C. 3.84×10⟦sup⟧8⟦/sup⟧m",
+   "D. 3.84×10⟦sup⟧8⟦/sup⟧Rm"
   ],
   "images": [],
   "answer": "C",
@@ -16804,7 +16804,7 @@
   ],
   "images": [],
   "answer": "B",
-  "explanation": "整数部分为2n的关系，无理式部分的关系为公差为5的等差数列，所以第四项根号里边应为12+5=17，而整数应为24=16，所以答案为16+",
+  "explanation": "整数部分为2⟦sup⟧n⟦/sup⟧的关系，无理式部分的关系为公差为5的等差数列，所以第四项根号里边应为12+5=17，而整数应为24=16，所以答案为16+",
   "source": "招聘考试行测专项练习 (二).doc",
   "no": 31
  },
@@ -16965,7 +16965,7 @@
   "id": "Q00576",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "的值是（ ）。",
+  "stem": "⟦img:images/招聘考试行测专项练习(二)_formula_image31.wmf.png⟧ 的值是（ ）。",
   "options": [
    "A. ⟦img:images/招聘考试行测专项练习(二)_formula_image32.wmf.png⟧",
    "B. ⟦img:images/招聘考试行测专项练习(二)_formula_image33.wmf.png⟧",
@@ -16982,7 +16982,7 @@
   "id": "Q00577",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "若a·mn+b-1+(c-3)2=0,那么a、b、c三个数的和为（ ）。",
+  "stem": "若a·m⟦sup⟧n⟦/sup⟧+b-1+(c-3)⟦sup⟧2⟦/sup⟧=0,那么a、b、c三个数的和为（ ）。",
   "options": [
    "A. 5",
    "B. 6",
@@ -17093,7 +17093,7 @@
   ],
   "images": [],
   "answer": "D",
-  "explanation": "假设210＝x，则原式可简化为",
+  "explanation": "假设2⟦sup⟧10⟦/sup⟧＝x，则原式可简化为",
   "source": "招聘考试行测专项练习 (二).doc",
   "no": 48
  },
@@ -17127,7 +17127,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "和为偶数有两种情况，一种是向上的两面均为偶数，一种是都为奇数。因此，有N= C13·C13·2=s3×3×2=18。",
+  "explanation": "和为偶数有两种情况，一种是向上的两面均为偶数，一种是都为奇数。因此，有N= C⟦sup⟧1⟦/sup⟧⟦sub⟧3⟦/sub⟧·C⟦sup⟧1⟦/sup⟧⟦sub⟧3⟦/sub⟧·2=s3×3×2=18。",
   "source": "招聘考试行测专项练习 (二).doc",
   "no": 50
  },
@@ -20532,7 +20532,7 @@
   "id": "Q00701",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "已知|a-b|+(a+b)4=0，那么代数式(a+1)+(a+3)/(b-1)(b-6)的值为（ ）。",
+  "stem": "已知|a-b|+(a+b)⟦sup⟧4⟦/sup⟧=0，那么代数式(a+1)+(a+3)/(b-1)(b-6)的值为（ ）。",
   "options": [
    "A. -2",
    "B. ⟦img:images/招聘考试行测专项练习(五)_formula_image16.wmf.png⟧",
@@ -22566,7 +22566,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "此题从第三项开始，每一项都是前面两项的和的平方，即：（1＋2）2＝9，（9＋2）2＝121，故（121＋9）2＝16900。",
+  "explanation": "此题从第三项开始，每一项都是前面两项的和的平方，即：（1＋2）⟦sup⟧2⟦/sup⟧＝9，（9＋2）⟦sup⟧2⟦/sup⟧＝121，故（121＋9）⟦sup⟧2⟦/sup⟧＝16900。",
   "source": "招聘考试行测专项练习 (八).doc",
   "no": 31
  },
@@ -22642,7 +22642,7 @@
   "id": "Q00825",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "-14-（1-0.5）×⟦img:images/招聘考试行测专项练习(八)_formula_image16.wmf.png⟧ 〔2-（-3）2〕=（ ）。",
+  "stem": "-1⟦sup⟧4⟦/sup⟧-（1-0.5）×⟦img:images/招聘考试行测专项练习(八)_formula_image16.wmf.png⟧ 〔2-（-3）⟦sup⟧2⟦/sup⟧〕=（ ）。",
   "options": [
    "A. ⟦img:images/招聘考试行测专项练习(八)_formula_image17.wmf.png⟧",
    "B. 0.25",
@@ -22744,7 +22744,7 @@
   "id": "Q00831",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "⟦img:images/招聘考试行测专项练习(八)_formula_image25.wmf.png⟧ +（⟦img:images/招聘考试行测专项练习(八)_formula_image26.wmf.png⟧ ）2+（⟦img:images/招聘考试行测专项练习(八)_formula_image26.wmf.png⟧ ）3+（⟦img:images/招聘考试行测专项练习(八)_formula_image26.wmf.png⟧ ）4的值是（ ）。",
+  "stem": "⟦img:images/招聘考试行测专项练习(八)_formula_image25.wmf.png⟧ +（⟦img:images/招聘考试行测专项练习(八)_formula_image26.wmf.png⟧ ）⟦sup⟧2⟦/sup⟧+（⟦img:images/招聘考试行测专项练习(八)_formula_image26.wmf.png⟧ ）⟦sup⟧3⟦/sup⟧+（⟦img:images/招聘考试行测专项练习(八)_formula_image26.wmf.png⟧ ）⟦sup⟧4⟦/sup⟧的值是（ ）。",
   "options": [
    "A. ⟦img:images/招聘考试行测专项练习(八)_formula_image27.wmf.png⟧",
    "B. ⟦img:images/招聘考试行测专项练习(八)_formula_image28.wmf.png⟧",
@@ -22855,7 +22855,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "这是一个排列组合题。由题可知，三个数要么都为偶数，要么至少有两个奇数，三个奇数的情况是不存在的，所以计算公式为：P25+P34=5×4+4×3×2=20+24=44。",
+  "explanation": "这是一个排列组合题。由题可知，三个数要么都为偶数，要么至少有两个奇数，三个奇数的情况是不存在的，所以计算公式为：P⟦sup⟧2⟦/sup⟧⟦sub⟧5⟦/sub⟧+P⟦sup⟧3⟦/sup⟧⟦sub⟧4⟦/sub⟧=5×4+4×3×2=20+24=44。",
   "source": "招聘考试行测专项练习 (八).doc",
   "no": 48
  },
@@ -25432,7 +25432,7 @@
   ],
   "images": [],
   "answer": "D",
-  "explanation": "-26＝(-3)3＋1，-6＝(-2)3+2，2＝(-1)3+3，4＝03+4，6＝13＋5，故空缺项应为23+6=14，选D。",
+  "explanation": "-26＝(-3)⟦sup⟧3⟦/sup⟧＋1，-6＝(-2)⟦sup⟧3⟦/sup⟧+2，2＝(-1)⟦sup⟧3⟦/sup⟧+3，4＝0⟦sup⟧3⟦/sup⟧+4，6＝1⟦sup⟧3⟦/sup⟧＋5，故空缺项应为2⟦sup⟧3⟦/sup⟧+6=14，选D。",
   "source": "招聘考试行测专项练习 (六).doc",
   "no": 5
  },
@@ -25457,7 +25457,7 @@
   "id": "Q00931",
   "part": "第一部分数量关系",
   "section": "二、数学运算：共10题",
-  "stem": "计算 + + +…+ 的值为（ ）。",
+  "stem": "计算⟦img:images/招聘考试行测专项练习(六)_formula_image8.wmf.png⟧ +⟦img:images/招聘考试行测专项练习(六)_formula_image9.wmf.png⟧ +⟦img:images/招聘考试行测专项练习(六)_formula_image10.wmf.png⟧ +…+⟦img:images/招聘考试行测专项练习(六)_formula_image11.wmf.png⟧ 的值为（ ）。",
   "options": [
    "A. ⟦img:images/招聘考试行测专项练习(六)_formula_image12.wmf.png⟧",
    "B. ⟦img:images/招聘考试行测专项练习(六)_formula_image13.wmf.png⟧",
@@ -25474,16 +25474,16 @@
   "id": "Q00932",
   "part": "第一部分数量关系",
   "section": "二、数学运算：共10题",
-  "stem": "（-2）2004＋（-2）2005的值为（ ）。",
+  "stem": "（-2）⟦sup⟧2004⟦/sup⟧＋（-2）⟦sup⟧2005⟦/sup⟧的值为（ ）。",
   "options": [
-   "A. 2 2004",
-   "B. -2 2005",
-   "C. -2 2004",
-   "D. 22005"
+   "A. 2 ⟦sup⟧2004⟦/sup⟧",
+   "B. -2 ⟦sup⟧2005⟦/sup⟧",
+   "C. -2 ⟦sup⟧2004⟦/sup⟧",
+   "D. 2⟦sup⟧2005⟦/sup⟧"
   ],
   "images": [],
   "answer": "C",
-  "explanation": "原式=（-2）2004+（-2）×（-2）2004=（-2）2004×（1-2）=-（-2）2004=-22004",
+  "explanation": "原式=（-2）⟦sup⟧2004⟦/sup⟧+（-2）×（-2）⟦sup⟧2004⟦/sup⟧=（-2）⟦sup⟧2004⟦/sup⟧×（1-2）=-（-2）⟦sup⟧2004⟦/sup⟧=-2⟦sup⟧2004⟦/sup⟧",
   "source": "招聘考试行测专项练习 (六).doc",
   "no": 8
  },
@@ -28900,7 +28900,7 @@
   ],
   "images": [],
   "answer": "A",
-  "explanation": "［解析］该数列的规律是（15+1）＝（3+1）2，20+5＝（3+2）2，故问号处应为",
+  "explanation": "［解析］该数列的规律是（15+1）＝（3+1）⟦sup⟧2⟦/sup⟧，20+5＝（3+2）⟦sup⟧2⟦/sup⟧，故问号处应为",
   "source": "招聘考试行测专项练习 (十).doc",
   "no": 5,
   "material": [
@@ -29974,7 +29974,7 @@
   ],
   "images": [],
   "answer": "D",
-  "explanation": "［解析］根据题意贴错三个，贴对两个。首先从五个瓶子中选出3个的种类为C35＝10种，这三个瓶子为贴错标签的，这三个瓶子贴错标签的有两种情况。所以五个瓶子中贴错三个标签的情况有10×2＝20种。",
+  "explanation": "［解析］根据题意贴错三个，贴对两个。首先从五个瓶子中选出3个的种类为C⟦sup⟧3⟦/sup⟧⟦sub⟧5⟦/sub⟧＝10种，这三个瓶子为贴错标签的，这三个瓶子贴错标签的有两种情况。所以五个瓶子中贴错三个标签的情况有10×2＝20种。",
   "source": "招聘考试行测专项练习 (十).doc",
   "no": 12,
   "material": [
@@ -44700,7 +44700,7 @@
   ],
   "images": [],
   "answer": "A",
-  "explanation": "125＝53，16＝42，3＝31，1＝20，故空缺项应为1-1＝1，选A。",
+  "explanation": "125＝5⟦sup⟧3⟦/sup⟧，16＝4⟦sup⟧2⟦/sup⟧，3＝3⟦sup⟧1⟦/sup⟧⟦sup⟧，⟦/sup⟧⟦sup⟧1⟦/sup⟧⟦sup⟧＝⟦/sup⟧⟦sup⟧20⟦/sup⟧⟦sup⟧，故空缺项应为⟦/sup⟧⟦sup⟧1-1⟦/sup⟧⟦sup⟧＝⟦/sup⟧⟦sup⟧1⟦/sup⟧⟦sup⟧，选⟦/sup⟧⟦sup⟧A⟦/sup⟧⟦sup⟧。⟦/sup⟧",
   "source": "招聘考试行测专项练习 (十一).doc",
   "no": 26
  },
@@ -44731,7 +44731,7 @@
   ],
   "images": [],
   "answer": "D",
-  "explanation": "题中数列遵循的规律为：an+2＝an+3an+1，故空缺项为3×43+13＝142，选D。",
+  "explanation": "题中数列遵循的规律为：a⟦sub⟧n+2⟦/sub⟧＝a⟦sub⟧n⟦/sub⟧+3a⟦sub⟧n+1⟦/sub⟧，故空缺项为3×43+13＝142，选D。",
   "source": "招聘考试行测专项练习 (十一).doc",
   "no": 28
  },
@@ -44748,7 +44748,7 @@
   ],
   "images": [],
   "answer": "A",
-  "explanation": "立方“加1、“减1”规律。即23+1＝9，13-1＝0，03+1＝1，(-1)3-1＝-2，(一2)3+1＝-7，故空缺项为(-3)3-1＝-28，选A。",
+  "explanation": "立方“加1、“减1”规律。即2⟦sup⟧3⟦/sup⟧+1＝9，1⟦sup⟧3⟦/sup⟧-1＝0，0⟦sup⟧3⟦/sup⟧+1＝1，(-1)⟦sup⟧3⟦/sup⟧-1＝-2，(一2)⟦sup⟧3⟦/sup⟧+1＝-7，故空缺项为(-3)⟦sup⟧3⟦/sup⟧-1＝-28，选A。",
   "source": "招聘考试行测专项练习 (十一).doc",
   "no": 29
  },
@@ -44765,7 +44765,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "an-an+1+1＝an+2，即前两项之差加1等于第三项。故空缺项为7-(-2)+1＝10。",
+  "explanation": "a⟦sub⟧n⟦/sub⟧-a⟦sub⟧n+1⟦/sub⟧+1＝a⟦sub⟧n+2⟦/sub⟧，即前两项之差加1等于第三项。故空缺项为7-(-2)+1＝10。",
   "source": "招聘考试行测专项练习 (十一).doc",
   "no": 30
  },
@@ -47095,7 +47095,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "-28＝(-3)3-1，-9＝(-2)3-1，-2＝(-1)3-1，-1＝03-1，7＝23-1，26＝33-1，故空缺项为43-1＝63，选C",
+  "explanation": "-28＝(-3)⟦sup⟧3⟦/sup⟧-1，-9＝(-2)⟦sup⟧3⟦/sup⟧-1，-2＝(-1)⟦sup⟧3⟦/sup⟧-1，-1＝0⟦sup⟧3⟦/sup⟧-1，7＝2⟦sup⟧3⟦/sup⟧-1，26＝3⟦sup⟧3⟦/sup⟧-1，故空缺项为4⟦sup⟧3⟦/sup⟧-1＝63，选C",
   "source": "招聘考试行测专项练习 (十二).doc",
   "no": 32
  },
@@ -49370,7 +49370,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "从第三项开始后一项是前两项和的平方，即9=（1+2）2，121=（9+2）2，所以第5项是（121+9）2=16900。",
+  "explanation": "从第三项开始后一项是前两项和的平方，即9=（1+2）⟦sup⟧2⟦/sup⟧，121=（9+2）⟦sup⟧2⟦/sup⟧，所以第5项是（121+9）⟦sup⟧2⟦/sup⟧=16900。",
   "source": "招聘考试行测专项练习 (四).doc",
   "no": 31
  },
@@ -49557,7 +49557,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "设单位为圈，即S=2，那么V甲=1=7/7，V乙=1+1/7=8/7，V丙=1-1/7=6/7，当乙到终点时，S2=2,那么所需的时间t=S2/V2=2÷8/7=7/4，那么S甲=1×7/4，S丙=6/7×7/4=6/4，则S甲-S丙=1/4圈，而一圈有400米，所以相差的距离是100米。",
+  "explanation": "设单位为圈，即S=2，那么V⟦sub⟧甲⟦/sub⟧=1=7/7，V⟦sub⟧乙⟦/sub⟧=1+1/7=8/7，V⟦sub⟧丙⟦/sub⟧=1-1/7=6/7，当乙到终点时，S⟦sub⟧2⟦/sub⟧=2,那么所需的时间t=S⟦sub⟧2⟦/sub⟧/V⟦sub⟧2⟦/sub⟧=2÷8/7=7/4，那么S⟦sub⟧甲⟦/sub⟧=1×7/4，S⟦sub⟧丙⟦/sub⟧=6/7×7/4=6/4，则S⟦sub⟧甲⟦/sub⟧-S⟦sub⟧丙⟦/sub⟧=1/4圈，而一圈有400米，所以相差的距离是100米。",
   "source": "招聘考试行测专项练习 (四).doc",
   "no": 42
  },
@@ -49633,7 +49633,7 @@
   "id": "Q01448",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "已知|a-b|+(a+b)4=0，那么代数式(a+1)+(a+3)/(b-1)(b-6)的值为（ ）。",
+  "stem": "已知|a-b|+(a+b)⟦sup⟧4⟦/sup⟧=0，那么代数式(a+1)+(a+3)/(b-1)(b-6)的值为（ ）。",
   "options": [
    "A. -2",
    "B. ⟦img:images/招聘考试行测专项练习(四)_formula_image32.wmf.png⟧",
@@ -49642,7 +49642,7 @@
   ],
   "images": [],
   "answer": "C",
-  "explanation": "由|a-b|+(a+b)4=0可导出",
+  "explanation": "由|a-b|+(a+b)⟦sup⟧4⟦/sup⟧=0可导出",
   "source": "招聘考试行测专项练习 (四).doc",
   "no": 47
  },
@@ -49650,7 +49650,7 @@
   "id": "Q01449",
   "part": "第二部分数量关系",
   "section": "二、数学运算",
-  "stem": "的值为（ ）。",
+  "stem": "⟦img:images/招聘考试行测专项练习(四)_formula_image34.wmf.png⟧ 的值为（ ）。",
   "options": [
    "A. ⟦img:images/招聘考试行测专项练习(四)_formula_image35.wmf.png⟧",
    "B. ⟦img:images/招聘考试行测专项练习(四)_formula_image36.wmf.png⟧",
@@ -49669,10 +49669,10 @@
   "section": "二、数学运算",
   "stem": "下列排序正确的是（ ）。",
   "options": [
-   "A. ",
-   "B. ",
-   "C. ",
-   "D. "
+   "A. ⟦img:images/招聘考试行测专项练习(四)_formula_image39.wmf.png⟧",
+   "B. ⟦img:images/招聘考试行测专项练习(四)_formula_image40.wmf.png⟧",
+   "C. ⟦img:images/招聘考试行测专项练习(四)_formula_image41.wmf.png⟧",
+   "D. ⟦img:images/招聘考试行测专项练习(四)_formula_image42.wmf.png⟧"
   ],
   "images": [],
   "answer": "B",
