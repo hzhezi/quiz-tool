@@ -998,17 +998,15 @@ function openImport() {
     <div id="impMsg" class="hint" style="margin-bottom:10px"></div>
     <div class="actions">
       <button onclick="this.closest('.modal-mask').remove()">取消</button>
-      <button id="impParse" class="danger" style="background:var(--primary);border-color:var(--primary)" onclick="doImportPreview()" disabled>解析预览</button>
       <button id="impConfirm" class="danger" style="background:var(--green);border-color:var(--green)" onclick="doImport()" disabled>确认导入</button>
     </div>
   </div>`;
   document.body.appendChild(mask);
 }
 function onImportFiles() {
-  const ok = !!$('#impQ').files[0];
-  $('#impParse').disabled = !ok;
   $('#impConfirm').disabled = true;
   $('#impMsg').textContent = '';
+  if ($('#impQ').files[0]) doImportPreview();   // 选好文件后自动解析
 }
 function importForm() {
   const fd = new FormData();
