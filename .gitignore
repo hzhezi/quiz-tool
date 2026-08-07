@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 临时文件
+tmp_docx/
+data/tmp_import/
+
+# 个人数据（学习记录、个人导入的题库）
+data/quiz.db
+data/imported.json
+
+# macOS
+.DS_Store

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行测刷题工具</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --border: #e6e8eb;
+    --text: #1f2329;
+    --muted: #8a919c;
+    --primary: #3b82f6;
+    --primary-bg: #eff6ff;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --amber: #b45309;
+    --amber-bg: #fffbeb;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6;
+  }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* 顶部 */
+  .topbar {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 0 20px; height: 52px; display: flex; align-items: center; gap: 24px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+  .nav { display: flex; gap: 4px; flex: 1; }
+  .nav button {
+    border: none; background: none; padding: 8px 14px; border-radius: 8px;
+    font-size: 14px; color: var(--muted); cursor: pointer;
+  }
+  .nav button.active { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+  .nav button:hover { background: #eef1f5; color: var(--text); }
+  .topbar .reset-btn {
+    border: 1px solid var(--border); background: var(--card); color: var(--muted);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .topbar .reset-btn:hover { color: var(--red); border-color: var(--red); }
+  .topbar .import-btn {
+    border: 1px solid var(--primary); background: var(--primary); color: #fff;
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .topbar .import-btn:hover { filter: brightness(1.05); }
+
+  /* 主区 */
+  .main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 20px 16px 60px; }
+
+  /* 筛选 */
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+    background: var(--card); padding: 12px; border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .filters select {
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 13px; background: var(--card); color: var(--text); max-width: 220px;
+  }
+  .filters .spacer { flex: 1; }
+  .pill {
+    border: 1px solid var(--border); background: var(--card); border-radius: 999px;
+    padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--muted);
+  }
+  .pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .op-btns { display: inline-flex; gap: 6px; }
+  .op-btns .pill { padding: 3px 12px; }
+  .pill.del { color: var(--red); border-color: #f3c1c1; }
+  .pill.del:hover { background: var(--red-bg); }
+
+  /* 题目列表 */
+  .qlist { display: flex; flex-direction: column; gap: 10px; }
+  .qcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; cursor: pointer; transition: box-shadow .15s, border-color .15s;
+  }
+  .qcard:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); border-color: #d3d7dd; }
+  .qcard .head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .qcard .no {
+    background: var(--primary-bg); color: var(--primary); font-weight: 600;
+    padding: 2px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+  }
+  .qcard .part { color: var(--muted); font-size: 12px; }
+  .qcard .stem {
+    color: var(--text); margin-bottom: 6px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .qcard .meta { display: flex; gap: 8px; align-items: center; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+  .tag.ans-yes { background: var(--green-bg); color: var(--green); }
+  .tag.ans-user { background: var(--amber-bg); color: var(--amber); }
+  .tag.ans-no { background: #f1f2f4; color: var(--muted); }
+  .tag.right { background: var(--green-bg); color: var(--green); }
+  .tag.wrong { background: var(--red-bg); color: var(--red); }
+  .tag.attempt { background: var(--primary-bg); color: var(--primary); }
+
+  /* 刷题 */
+  .quiz-area { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .quiz-head { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .quiz-head .progress { color: var(--muted); font-size: 13px; }
+  .material {
+    background: var(--amber-bg); border: 1px solid #f3e3c3; color: var(--amber);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px;
+  }
+  .mat-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 13px; }
+  .mat-table th, .mat-table td {
+    border: 1px solid #e8dcc0; padding: 5px 8px; text-align: center; color: var(--amber);
+  }
+  .mat-table th { background: #f5ecd6; font-weight: 600; }
+  .mat-text { color: var(--amber); white-space: pre-wrap; }
+  .q-img { max-width: 100%; margin: 8px 0; border-radius: 6px; }
+  .q-img-wrap { text-align: center; }
+  .stem { font-size: 15px; margin-bottom: 16px; white-space: pre-wrap; }
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+    cursor: pointer; display: flex; gap: 10px; align-items: flex-start;
+    transition: border-color .15s, background .15s;
+  }
+  .opt:hover { border-color: var(--primary); }
+  .opt .key {
+    font-weight: 600; color: var(--primary); min-width: 18px; text-align: center;
+    background: var(--primary-bg); border-radius: 6px; padding: 0 5px; font-size: 13px;
+  }
+  .opt .txt { flex: 1; }
+  .opt.selected { border-color: var(--primary); background: var(--primary-bg); }
+  .opt.correct { border-color: var(--green); background: var(--green-bg); }
+  .opt.wrong { border-color: var(--red); background: var(--red-bg); }
+  .opt.disabled { cursor: default; opacity: .8; }
+
+  .feedback { margin-top: 16px; border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+  .feedback.right { background: var(--green-bg); color: var(--green); }
+  .feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .feedback.noans { background: var(--amber-bg); color: var(--amber); }
+  .feedback .expl { margin-top: 6px; color: var(--text); white-space: pre-wrap; }
+
+  .set-answer { margin-top: 16px; border: 1px dashed var(--border); border-radius: 8px; padding: 14px; }
+  .set-answer h4 { margin-bottom: 8px; font-size: 14px; }
+  .set-answer .opt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .set-answer .opt-row button {
+    border: 1px solid var(--border); background: var(--card); padding: 6px 14px;
+    border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
+  .set-answer .opt-row button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .set-answer textarea {
+    width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;
+  }
+  .set-answer .save {
+    margin-top: 8px; background: var(--primary); color: #fff; border: none;
+    padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
+  .set-answer .save:hover { filter: brightness(1.05); }
+
+  .quiz-nav { display: flex; justify-content: space-between; margin-top: 18px; }
+  .quiz-nav button {
+    padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card); cursor: pointer; font-size: 14px;
+  }
+  .quiz-nav button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+  .quiz-nav button:disabled { opacity: .4; cursor: default; }
+
+  /* 统计 */
+  .stats-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+  .stat-card .num { font-size: 26px; font-weight: 700; }
+  .stat-card .label { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stat-card.blue .num { color: var(--primary); }
+  .stat-card.green .num { color: var(--green); }
+  .stat-card.red .num { color: var(--red); }
+  .stat-card.amber .num { color: var(--amber); }
+  .stats-table { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: #fafbfc; color: var(--muted); font-weight: 600; }
+  .bar { background: #eef1f5; border-radius: 4px; height: 8px; overflow: hidden; width: 100px; }
+  .bar .fill { background: var(--primary); height: 100%; }
+
+  .empty { text-align: center; color: var(--muted); padding: 60px 0; }
+  .empty .big { font-size: 40px; margin-bottom: 10px; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .hint b { color: var(--text); font-weight: 600; }
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex;
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal {
+    background: var(--card); border-radius: var(--radius); padding: 20px; width: 90%;
+    max-width: 400px;
+  }
+  .modal h3 { margin-bottom: 12px; }
+  .modal p { margin-bottom: 12px; color: var(--muted); font-size: 13px; }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .modal .actions button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; background: var(--card); }
+  .modal .actions .danger { background: var(--red); color: #fff; border-color: var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>行测刷题</div>
+    <div class="nav">
+      <button data-view="quiz">刷题</button>
+      <button data-view="browse">题库</button>
+      <button data-view="wrong">错题本</button>
+      <button data-view="problem">待完善</button>
+      <button data-view="stats" class="active">统计</button>
+    </div>
+    <button class="import-btn" onclick="openImport()">📥 导入题库</button>
+    <button class="reset-btn" onclick="confirmReset()">重置记录</button>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const state = {
+  view: 'stats',
+  meta: {},
+  list: [],          // 当前列表
+  listTotal: 0,
+  idx: 0,            // 当前题索引
+  filter: { source: '', part: '', section: '', mode: 'all', kw: '' },
+  noAnswerOnly: false,
+};
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+async function init() {
+  state.meta = await api('/api/meta');
+  bindNav();
+  await refreshList();
+  switchView('stats');   // 默认进入统计页
+}
+
+function bindNav() {
+  document.querySelectorAll('.nav button').forEach(b => {
+    b.onclick = () => { switchView(b.dataset.view); };
+  });
+}
+
+function switchView(view) {
+  state.view = view;
+  document.querySelectorAll('.nav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === view));
+  if (view === 'browse') refreshList();
+  else if (view === 'wrong') loadWrong();
+  else if (view === 'problem') loadProblemView();
+  else if (view === 'stats') loadStats();
+  else renderQuiz();
+}
+
+/* ---------- 筛选与列表 ---------- */
+function sourceOptions() {
+  return Object.entries(state.meta).map(([k, v]) =>
+    `<option value="${escAttr(k)}">${esc(k)}（${v.total}题）</option>`).join('');
+}
+
+function renderFilters() {
+  const f = state.filter;
+  const hasSrc = Object.keys(state.meta).length > 0;
+  if (!hasSrc) return '';
+  return `
+  <div class="filters">
+    <select id="f-src" onchange="onFilterSrc(this.value)">
+      ${sourceOptions()}
+    </select>
+    <input id="f-kw" placeholder="搜索题干…" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:150px"
+           oninput="debouncedKw()">
+    <div class="spacer"></div>
+    <button class="pill ${f.mode==='all'?'active':''}" onclick="setMode('all')">全部</button>
+    <button class="pill ${f.mode==='noanswer'?'active':''}" onclick="setMode('noanswer')">未作答</button>
+    <button class="pill ${f.mode==='wrong'?'active':''}" onclick="setMode('wrong')">错题</button>
+    <button class="pill ${f.mode==='right'?'active':''}" onclick="setMode('right')">答对</button>
+  </div>`;
+}
+
+function setMode(m) {
+  state.filter.mode = m;
+  refreshList();
+  if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
+}
+async function onFilterSrc(v) {
+  state.filter.source = v; state.filter.part = ''; state.filter.section = '';
+  await refreshList();
+  if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
+}
+let kwTimer;
+function debouncedKw() {
+  clearTimeout(kwTimer);
+  kwTimer = setTimeout(() => { state.filter.kw = $('#f-kw').value; refreshList(); }, 300);
+}
+
+async function refreshList() {
+  const f = state.filter;
+  const src = f.source || Object.keys(state.meta)[0];
+  const q = new URLSearchParams({ source: src, mode: f.mode, kw: f.kw });
+  if (f.part) q.set('part', f.part);
+  if (f.section) q.set('section', f.section);
+  q.set('limit', '5000');
+  const d = await api('/api/questions?' + q.toString());
+  state.list = d.questions;
+  state.listTotal = d.total;
+  if (state.view === 'browse') renderBrowse();
+}
+
+/* ---------- 题库 ---------- */
+function renderBrowse() {
+  const src = state.filter.source || Object.keys(state.meta)[0];
+  $('#main').innerHTML = renderFilters() + `
+  <div class="hint" style="margin-bottom:12px">共 <b>${state.listTotal}</b> 题${src ? ' · ' + esc(src) : ''}</div>
+  <div class="qlist">
+    ${state.list.map((q, i) => qCard(q, i)).join('') || emptyHtml('题库为空')}
+  </div>`;
+}
+
+function qCard(q, i) {
+  const ansTag = !q.has_answer ? '<span class="tag ans-no">未设答案</span>'
+    : q.answer_source === 'user' ? '<span class="tag ans-user">答案(改)</span>'
+    : '<span class="tag ans-yes">有答案</span>';
+  const statTag = q.last_correct === 1 ? '<span class="tag right">已答对</span>'
+    : q.last_correct === 0 ? '<span class="tag wrong">答错</span>'
+    : q.attempted ? '<span class="tag attempt">已作答</span>' : '';
+  const img = q.images.length ? ' 📷' : '';
+  return `
+  <div class="qcard" onclick="openQuiz(${i})">
+    <div class="head"><span class="no">${q.no}</span>
+      <span class="part">${esc(q.part)}${q.section ? ' / ' + esc(q.section) : ''}</span>
+      <span class="spacer" style="flex:1"></span>${statTag}</div>
+    <div class="stem">${esc(q.stem) || '（图片题）'}${img}</div>
+    <div class="meta">${ansTag}<span class="hint">上次选：${q.last_selected || '—'}</span></div>
+  </div>`;
+}
+
+function emptyHtml(msg) {
+  return `<div class="empty"><div class="big">🗂️</div>${msg}</div>`;
+}
+
+/* ---------- 刷题 ---------- */
+function openQuiz(i) { state.idx = i; switchView('quiz'); }
+function currentQ() { return state.list[state.idx]; }
+
+function renderMaterial(mats) {
+  if (!mats || !mats.length) return '';
+  let html = '';
+  for (const m of mats) {
+    if (Array.isArray(m)) {
+      const maxCols = Math.max(...m.map(r => r.length), 0);
+      html += `<table class="mat-table">`;
+      m.forEach((row, ri) => {
+        html += `<tr>`;
+        for (let c = 0; c < maxCols; c++) {
+          const cell = row[c] || '';
+          html += ri === 0
+            ? `<th>${esc(cell)}</th>`
+            : `<td>${esc(cell)}</td>`;
+        }
+        html += `</tr>`;
+      });
+      html += `</table>`;
+    } else {
+      html += `<div class="mat-text">${esc(m)}</div>`;
+    }
+  }
+  return `<div class="material">${html}</div>`;
+}
+
+function renderQuiz() {
+  const list = state.list;
+  if (!list.length) {
+    $('#main').innerHTML = `<div class="filters" style="justify-content:space-between">
+      <div>当前筛选没有题目</div>
+      <button class="pill active" onclick="switchView('browse')">去题库选择</button></div>
+      <div class="empty"><div class="big">📖</div>请先到「题库」选择题目，或到「设答案」完善答案后刷题</div>`;
+    return;
+  }
+  if (state.idx >= list.length) state.idx = list.length - 1;
+  const q = currentQ();
+  const prev = list[state.idx - 1], next = list[state.idx + 1];
+  $('#main').innerHTML = `
+  <div class="filters" style="align-items:center">
+    <select id="f-src" onchange="onFilterSrc(this.value)" style="max-width:200px">
+      ${sourceOptions()}
+    </select>
+    <div class="spacer"></div>
+    <span class="hint" style="display:inline-flex;align-items:center;gap:6px">
+      第 <input id="jumpNo" type="number" min="1" placeholder="${list.length ? Math.min(list[0].no, list[list.length-1].no) + '~' + Math.max(list[0].no, list[list.length-1].no) : ''}" style="width:70px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px" onkeydown="if(event.key==='Enter')jumpToNo()"> 题
+      <button class="pill active" style="padding:3px 10px" onclick="jumpToNo()">跳转</button>
+      <span>· ${state.idx + 1} / ${list.length} · 共${state.listTotal}题</span>
+    </span>
+  </div>
+  <div class="quiz-area">
+    <div class="quiz-head">
+      <span class="no" style="background:var(--primary-bg);color:var(--primary);font-weight:600;padding:2px 8px;border-radius:6px;font-size:12px">第${q.no}题</span>
+      <span class="hint">${esc(q.source)} · ${esc(q.part)}${q.section ? ' · ' + esc(q.section) : ''}</span>
+    </div>
+    ${renderMaterial(q.material)}
+    ${q.images.length ? `<div class="q-img-wrap">${q.images.map(i => `<img class="q-img" src="/${i}" alt="题图">`).join('')}</div>` : ''}
+    <div class="stem">${esc(q.stem) || '（本题为图片题）'}</div>
+    <div class="opts" id="opts">
+      ${(q.options || []).map(o => {
+        const key = o.slice(0, 1);
+        const txt = o.slice(3).trim();
+        let cls = '', locked = false;
+        if (q.attempted) {
+          locked = true;
+          if (q.last_correct === 1) {
+            if (key === q.answer) cls = 'correct';
+          } else if (q.last_correct === 0) {
+            if (key === q.last_selected) cls = 'wrong selected';
+            if (key === q.answer) cls = 'correct';
+          } else {
+            if (key === q.last_selected) cls = 'selected';
+          }
+        }
+        return `<div class="opt ${cls}" data-key="${key}" ${locked ? '' : `onclick="pick('${key}')"`}>
+          <span class="key">${key}</span><span class="txt">${esc(txt)}</span></div>`;
+      }).join('') || '<div class="hint">本题无文字选项</div>'}
+    </div>
+    <div id="feedback">${initialFeedback(q)}</div>
+    <div id="setArea"></div>
+    <div class="quiz-nav">
+      <button ${prev ? '' : 'disabled'} onclick="go(-1)">← 上一题</button>
+      <button ${next ? '' : 'disabled'} onclick="go(1)">下一题 →</button>
+    </div>
+  </div>`;
+  const sf = $('#f-src'); if (sf) sf.value = state.filter.source;
+  renderSetArea();
+}
+
+function initialFeedback(q) {
+  if (!q.attempted) return '';
+  if (!q.has_answer) {
+    return `<div class="feedback noans">本题还没有正确答案，你已作答但无法判分。</div>`;
+  }
+  if (q.last_correct === 1) {
+    return `<div class="feedback right"><b>✓ 已答对</b>${q.explanation ? `<div class="expl">${esc(q.explanation)}</div>` : ''}</div>`;
+  }
+  if (q.last_correct === 0) {
+    return `<div class="feedback wrong"><b>✗ 答错</b>　正确答案：<b>${esc(q.answer)}</b>${q.explanation ? `<div class="expl">${esc(q.explanation)}</div>` : ''}
+      <div style="margin-top:8px"><button class="pill active" onclick="redo()">重新作答</button></div></div>`;
+  }
+  return '';
+}
+
+function go(d) {
+  const ni = state.idx + d;
+  if (ni < 0 || ni >= state.list.length) return;
+  state.idx = ni;
+  renderQuiz();
+}
+
+function jumpToNo() {
+  const n = parseInt($('#jumpNo').value, 10);
+  if (!n) return;
+  const idx = state.list.findIndex(q => q.no === n);
+  if (idx >= 0) {
+    state.idx = idx;
+    renderQuiz();
+  } else {
+    const el = $('#jumpNo');
+    el.value = '';
+    el.placeholder = '无此题号';
+    el.focus();
+  }
+}
+
+function redo() {
+  const q = currentQ();
+  api('/api/attempt/' + q.id, { method: 'DELETE' }).then(() => {
+    q.attempted = false; q.last_correct = null; q.last_selected = null;
+    renderQuiz();
+  });
+}
+
+function pick(key) {
+  const q = currentQ();
+  if (q.attempted) return;   // 已作答锁定
+  if (!q.options || !q.options.length) return;
+  api('/api/attempt', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: q.id, selected: key })
+  }).then(res => {
+    q.attempted = true;
+    q.last_selected = key;
+    q.last_correct = res.correct === null ? null : (res.correct ? 1 : 0);
+    q.answer = res.answer || q.answer;
+    q.has_answer = res.has_answer;
+    showFeedback(res, key);
+    renderSetArea();
+  });
+}
+
+function showFeedback(res, key) {
+  const q = currentQ();
+  q.last_correct = (key === q.answer && q.has_answer) ? 1 : 0;
+  const optsBox = $('#opts');
+  optsBox.querySelectorAll('.opt').forEach(o => {
+    o.classList.add('disabled');
+    const k = o.dataset.key;
+    if (k === q.answer) o.classList.add('correct');
+    if (k === key && key !== q.answer) o.classList.add('wrong');
+    if (k === key) o.classList.add('selected');
+  });
+  let fb;
+  if (!q.has_answer) {
+    fb = `<div class="feedback noans">本题还没有正确答案，无法判分。可在下方设置正确答案。</div>`;
+  } else {
+    if (key === q.answer) {
+      fb = `<div class="feedback right"><b>✓ 回答正确</b>${q.explanation ? `<div class="expl">${esc(q.explanation)}</div>` : ''}</div>`;
+    } else {
+      fb = `<div class="feedback wrong"><b>✗ 回答错误</b>　正确答案：<b>${esc(q.answer)}</b>${q.explanation ? `<div class="expl">${esc(q.explanation)}</div>` : ''}
+        <div style="margin-top:8px"><button class="pill active" onclick="redo()">重新作答</button></div></div>`;
+    }
+  }
+  $('#feedback').innerHTML = fb;
+}
+
+function renderSetArea() {
+  const q = currentQ();
+  const setArea = $('#setArea');
+  if (!setArea) return;
+  if (!q.attempted) { setArea.innerHTML = ''; return; }   // 作答前不显示答案，避免泄题
+  const cur = q.answer || '';
+  const optsRow = (q.options && q.options.length) ? q.options.map(o =>
+    `<button data-k="${o.slice(0,1)}" class="${o.slice(0,1)===cur?'active':''}" onclick="setKey('${o.slice(0,1)}')">${esc(o.slice(0,1))}</button>`).join('')
+    : 'ABCD'.split('').map(k => `<button data-k="${k}" class="${k===cur?'active':''}" onclick="setKey('${k}')">${k}</button>`).join('');
+  const title = q.answer_source === 'user' ? '📝 已修改的答案（可再改）'
+    : q.has_answer ? '✅ 文档答案（如觉有误可更正）'
+    : '✏️ 本题暂无答案，请设置';
+  setArea.innerHTML = `
+  <div class="set-answer">
+    <h4>${title}</h4>
+    <div class="opt-row">${optsRow}</div>
+    <textarea id="expl" placeholder="答案解析（可选）">${esc(q.explanation || '')}</textarea>
+    <button class="save" onclick="saveAnswer()">保存答案</button>
+    <span id="saveMsg" class="hint" style="margin-left:10px"></span>
+  </div>`;
+  pickedKey = '';
+}
+
+let pickedKey = '';
+function setKey(k) {
+  pickedKey = k;
+  document.querySelectorAll('#setArea .opt-row button').forEach(b =>
+    b.classList.toggle('active', b.dataset.k === k));
+}
+function saveAnswer() {
+  const q = currentQ();
+  const answer = pickedKey || q.answer || '';
+  if (!answer) { showSaveMsg('请先选择答案'); return; }
+  api('/api/answer', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: q.id, answer, explanation: $('#expl').value })
+  }).then(() => {
+    q.answer = answer; q.has_answer = true; q.answer_source = 'user';
+    q.explanation = $('#expl').value;
+    if (q.last_selected) showFeedback(null, q.last_selected);
+    renderSetArea();
+    showSaveMsg('已保存 ✓');
+  });
+}
+function showSaveMsg(m) { const el = $('#saveMsg'); if (el) el.textContent = m; }
+
+/* ---------- 错题本 ---------- */
+async function loadWrong() {
+  const d = await api('/api/wrong');
+  state.list = d.questions;
+  state.idx = 0;
+  $('#main').innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h2 style="font-size:18px">错题本 <span class="hint" style="font-weight:400">（最近一次作答错误的题目，答对后自动移出）</span></h2>
+    <span class="tag wrong">${d.total} 题</span>
+  </div>
+  <div class="qlist">
+    ${d.questions.map((q, i) => qCard(q, i)).join('') || emptyHtml('太棒了，暂无错题 🎉')}
+  </div>`;
+}
+
+/* ---------- 待完善（图片题 / 无答案题） ---------- */
+async function loadProblemView() {
+  const d = await api('/api/questions?mode=problem&limit=5000');
+  state.list = d.questions;
+  state.idx = 0;
+  if (!d.total) {
+    $('#main').innerHTML = emptyHtml('没有待完善的题 🎉');
+    return;
+  }
+  $('#main').innerHTML = `
+  <div class="filters">
+    <span class="hint">以下 ${d.total} 题暂无正确答案，可直接设置，设置后自动移出</span>
+    <div class="spacer"></div>
+    <span class="tag ans-no" id="probCount">剩余 ${d.total} 题</span>
+  </div>
+  <div class="quiz-area" id="ansQuiz"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+    <button class="pill active" onclick="probNav(-1)">← 上一题</button>
+    <button class="pill active" onclick="probNav(1)">下一题 →</button>
+  </div>`;
+  renderProblemQuiz();
+}
+function probNav(d) {
+  const n = state.idx + d;
+  if (n < 0 || n >= state.list.length) return;
+  state.idx = n;
+  renderProblemQuiz();
+}
+function renderProblemQuiz() {
+  const q = state.list[state.idx];
+  const box = $('#ansQuiz');
+  if (!box) return;
+  const cur = q.answer || '';
+  const btnHtml = (q.options && q.options.length ? q.options : 'ABCD'.split('')).map(o => {
+    const k = typeof o === 'string' && o.length > 1 ? o.slice(0, 1) : o;
+    return `<button data-k="${k}" class="${k === cur ? 'active' : ''}" onclick="ansPick('${k}')">${k}</button>`;
+  }).join('');
+  box.innerHTML = `
+    <div class="quiz-head">
+      <span class="no" style="background:var(--primary-bg);color:var(--primary);font-weight:600;padding:2px 8px;border-radius:6px;font-size:12px">第${q.no}题</span>
+      <span class="hint">${state.idx + 1} / ${state.list.length} · ${esc(q.source)} · ${esc(q.part)}${q.section ? ' · ' + esc(q.section) : ''}</span>
+    </div>
+    ${renderMaterial(q.material)}
+    ${q.images.length ? `<div class="q-img-wrap">${q.images.map(i => `<img class="q-img" src="/${i}">`).join('')}</div>` : ''}
+    <div class="stem">${esc(q.stem) || '（纯图片题，无文字题干）'}</div>
+    <div class="opts" style="pointer-events:none">
+      ${(q.options || []).map(o => `<div class="opt"><span class="key">${esc(o.slice(0,1))}</span><span class="txt">${esc(o.slice(3))}</span></div>`).join('') || '<div class="hint">本题无文字选项</div>'}
+    </div>
+    <div class="set-answer">
+      <h4>${q.has_answer ? '✅ 已有答案（可更正）' : '✏️ 设置正确答案'} <span class="hint">当前：<b>${esc(q.answer || '—')}</b></span></h4>
+      <div class="opt-row" id="ansOpts">${btnHtml}</div>
+      <textarea id="aexpl" placeholder="答案解析（可选）">${esc(q.explanation || '')}</textarea>
+      <button class="save" onclick="problemSave()">保存并下一题</button>
+      <span id="ansMsg" class="hint" style="margin-left:10px"></span>
+    </div>`;
+  pickedKey = '';
+}
+function problemSave() {
+  const q = state.list[state.idx];
+  const answer = pickedKey || q.answer || '';
+  if (!answer) { const m = $('#ansMsg'); if (m) m.textContent = '请先选择答案'; return; }
+  api('/api/answer', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: q.id, answer, explanation: $('#aexpl').value })
+  }).then(() => {
+    state.list.splice(state.idx, 1);
+    const c = $('#probCount');
+    if (c) c.textContent = '剩余 ' + state.list.length + ' 题';
+    if (!state.list.length) { loadProblemView(); return; }
+    if (state.idx >= state.list.length) state.idx = state.list.length - 1;
+    renderProblemQuiz();
+  });
+}
+
+function ansPick(k) {
+  pickedKey = k;
+  document.querySelectorAll('#ansOpts button').forEach(b =>
+    b.classList.toggle('active', b.dataset.k === k));
+}
+
+/* ---------- 统计 ---------- */
+async function loadStats() {
+  const d = await api('/api/stats');
+  const rate = d.attempted ? Math.round(d.correct / d.attempted * 100) : 0;
+  const rows = Object.entries(d.by_source).map(([src, s]) => {
+    const r = s.attempted ? Math.round(s.correct / s.attempted * 100) : 0;
+    const pct = s.attempted ? Math.round(s.attempted / s.total * 100) : 0;
+    return `<tr>
+      <td>${esc(src)}</td><td>${s.total}</td>
+      <td><span class="tag ${s.has_answer ? 'ans-yes' : 'ans-no'}">${s.has_answer} 题</span></td>
+      <td>${s.attempted}</td><td>${s.correct}</td>
+      <td><div class="bar"><div class="fill" style="width:${pct}%"></div></div> ${pct}%</td>
+      <td style="color:${r >= 60 ? 'var(--green)' : r > 0 ? 'var(--amber)' : 'var(--red)'}">${s.attempted ? r + '%' : '—'}</td>
+      <td style="white-space:nowrap">
+        <span class="op-btns">
+          <button class="pill active" onclick="startQuiz('${escAttr(src)}')">开始刷题</button>
+          <button class="pill del" onclick="confirmDeleteSource('${escAttr(src)}')">删除</button>
+        </span>
+      </td>
+    </tr>`;
+  }).join('');
+  $('#main').innerHTML = `
+  <div class="stats-cards">
+    <div class="stat-card blue"><div class="num">${d.total}</div><div class="label">总题数</div></div>
+    <div class="stat-card amber"><div class="num">${d.has_answer}</div><div class="label">已设答案</div></div>
+    <div class="stat-card blue"><div class="num">${d.attempted}</div><div class="label">已作答</div></div>
+    <div class="stat-card green"><div class="num">${d.correct}</div><div class="label">答对</div></div>
+    <div class="stat-card red"><div class="num">${d.wrong_count}</div><div class="label">错题</div></div>
+    <div class="stat-card green"><div class="num">${rate}%</div><div class="label">正确率</div></div>
+  </div>
+  <div class="stats-table"><table>
+    <thead><tr><th>试卷</th><th>总题</th><th>已设答案</th><th>已作答</th><th>答对</th><th>进度</th><th>正确率</th><th>操作</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function confirmDeleteSource(src) {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.innerHTML = `<div class="modal">
+    <h3>删除题库？</h3>
+    <p>将删除「${esc(src)}」全部 ${state.meta[src] ? state.meta[src].total : ''} 题及其答题记录，不可恢复。</p>
+    <div class="actions">
+      <button onclick="this.closest('.modal-mask').remove()">取消</button>
+      <button class="danger" onclick="doDeleteSource('${escAttr(src)}')">确认删除</button>
+    </div></div>`;
+  document.body.appendChild(mask);
+}
+async function doDeleteSource(src) {
+  const r = await api('/api/delete_source', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ source: src })
+  });
+  document.querySelector('.modal-mask').remove();
+  if (r.error) { alert(r.error); return; }
+  state.meta = await api('/api/meta');
+  await refreshList();
+  loadStats();
+}
+
+function startQuiz(src) {
+  state.filter.source = src;
+  refreshList().then(() => { state.idx = 0; switchView('quiz'); });
+}
+
+/* ---------- 导入题库 ---------- */
+function openImport() {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.id = 'importMask';
+  mask.innerHTML = `<div class="modal" style="max-width:520px">
+    <h3>📥 导入题库</h3>
+    <p>支持 <b>doc / docx / pdf / txt</b> 格式。两种方式任选其一：</p>
+    <p>① 上传「题目文件」+「答案文件」（答案可单独一个文档）<br>
+       ② 只上传一个同时包含题目和答案的文档</p>
+    <div style="margin:10px 0">
+      <label style="display:block;margin-bottom:8px"><b>题目文件</b>（必选）
+        <input type="file" id="impQ" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px"><b>答案文件</b>（可选，单独文档时上传）
+        <input type="file" id="impA" accept=".doc,.docx,.pdf,.txt,.md" style="display:block;margin-top:4px"></label>
+    </div>
+    <div id="impMsg" class="hint" style="margin-bottom:10px"></div>
+    <div class="actions">
+      <button onclick="this.closest('.modal-mask').remove()">取消</button>
+      <button class="danger" style="background:var(--primary);border-color:var(--primary)" onclick="doImport()">开始导入</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mask);
+}
+async function doImport() {
+  const fq = $('#impQ').files[0];
+  if (!fq) { $('#impMsg').textContent = '请选择题目文件'; return; }
+  const msg = $('#impMsg');
+  msg.textContent = '正在解析导入…';
+  const fd = new FormData();
+  fd.append('question', fq);
+  const fa = $('#impA').files[0];
+  if (fa) fd.append('answer', fa);
+  try {
+    const r = await fetch('/api/import', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.error) { msg.textContent = '❌ ' + d.error; return; }
+    msg.innerHTML = `✅ 已导入 <b>${d.count}</b> 题（其中 <b>${d.with_answer}</b> 题带答案）`;
+    state.meta = await api('/api/meta');
+    await refreshList();
+    if (state.view === 'stats') loadStats();
+  } catch (e) {
+    msg.textContent = '❌ 导入失败：' + e;
+  }
+}
+
+/* ---------- 重置 ---------- */
+function confirmReset() {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.innerHTML = `<div class="modal">
+    <h3>确认重置？</h3>
+    <p>将清除所有答题记录和你设置的答案（文档自带答案保留）。此操作不可撤销。</p>
+    <div class="actions">
+      <button onclick="this.closest('.modal-mask').remove()">取消</button>
+      <button class="danger" onclick="doReset()">确认重置</button>
+    </div></div>`;
+  document.body.appendChild(mask);
+}
+async function doReset() {
+  await api('/api/reset', { method: 'POST' });
+  document.querySelector('.modal-mask').remove();
+  switchView(state.view);
+}
+
+/* ---------- 工具 ---------- */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) { return esc(s); }
+
+init();
+</script>
+</body>
+</html>
