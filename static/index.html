@@ -77,6 +77,22 @@
   .op-btns .pill { padding: 3px 12px; }
   .pill.del { color: var(--red); border-color: #f3c1c1; }
   .pill.del:hover { background: var(--red-bg); }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 0; }
+  .answer-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+  .card-head { display: flex; align-items: center; gap: 10px; }
+  .card-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; margin-top: 10px; }
+  .card-no { padding: 4px 0; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; cursor: pointer; background: #fafbfc; color: var(--text); text-align: center; }
+  .card-no:hover { border-color: var(--primary); }
+  .card-no.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .card-no.done { background: var(--green-bg); color: var(--green); border-color: #b6e3c0; }
+  .card-no.wrong { background: var(--red-bg); color: var(--red); border-color: #f3b3b3; }
+  .card-no.attempt { background: var(--primary-bg); color: var(--primary); }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .card-collapse { text-align: center; padding-top: 10px; border-top: 1px dashed var(--border); margin-top: 10px; }
+  .card-toggle { cursor: pointer; padding: 6px 26px; border-radius: 6px; color: var(--muted); font-size: 13px; user-select: none; display: inline-block; }
+  .card-toggle:hover { color: var(--primary); background: var(--primary-bg); }
+  .legend { display: inline-flex; gap: 10px; font-size: 11px; color: var(--muted); }
+  .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 3px; margin-right: 3px; vertical-align: middle; }
 
   /* 题目列表 */
   .qlist { display: flex; flex-direction: column; gap: 10px; }
@@ -235,6 +251,12 @@ const state = {
   wrongIdx: 0,
   probList: [],      // 待完善列表
   probIdx: 0,
+  pageSize: 20,      // 列表分页每页条数
+  browsePage: 1,     // 题库页当前页码
+  wrongPage: 1,      // 错题本当前页码
+  statsPage: 1,      // 统计页当前页码
+  cardPage: 1,       // 答题卡题号分页
+  cardOpen: false,   // 答题卡默认收起
   filter: { source: '', part: '', section: '', mode: 'all', kw: '' },
   noAnswerOnly: false,
 };
@@ -242,6 +264,17 @@ const state = {
 function curList() { return state.mode === 'wrong' ? state.wrongList : state.list; }
 function curIdx() { return state.mode === 'wrong' ? state.wrongIdx : state.idx; }
 function setCurIdx(i) { state.mode === 'wrong' ? (state.wrongIdx = i) : (state.idx = i); }
+
+function pagBar(total, page, ps, onPage) {
+  const pages = Math.max(1, Math.ceil(total / ps));
+  const start = (page - 1) * ps + 1;
+  const end = Math.min(page * ps, total);
+  return `<div class="pagination">
+    <button class="pill" ${page <= 1 ? 'disabled' : ''} onclick="${onPage}(${page - 1})">← 上一页</button>
+    <span class="hint">${total ? start + '-' + end + ' / ' + total : 0} · 第 ${page} / ${pages} 页</span>
+    <button class="pill" ${page >= pages ? 'disabled' : ''} onclick="${onPage}(${page + 1})">下一页 →</button>
+  </div>`;
+}
 
 async function api(url, opts) {
   const r = await fetch(url, opts);
@@ -305,12 +338,14 @@ function renderFilters() {
 
 function setMode(m) {
   state.filter.mode = m;
+  state.browsePage = 1;
   refreshList();
   if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
 }
 async function onFilterSrc(v) {
   state.filter.source = v; state.filter.part = ''; state.filter.section = '';
   state.mode = 'normal';
+  state.browsePage = 1;
   await refreshList();
   if (state.view === 'quiz') { state.idx = 0; renderQuiz(); }
 }
@@ -320,10 +355,11 @@ function onKwEnd() { kwComposing = false; debouncedKw(); }   // 选字完成，�
 function onKwInput() { if (!kwComposing) debouncedKw(); }    // 非组合期间输入即搜索
 function debouncedKw() {
   clearTimeout(kwTimer);
-  kwTimer = setTimeout(() => { state.filter.kw = $('#f-kw').value; refreshList(); }, 300);
+  kwTimer = setTimeout(() => { state.filter.kw = $('#f-kw').value; state.browsePage = 1; refreshList(); }, 300);
 }
 function clearKw() {
   state.filter.kw = '';
+  state.browsePage = 1;
   const kw = $('#f-kw'); if (kw) kw.value = '';
   refreshList();
 }
@@ -344,14 +380,25 @@ async function refreshList() {
 /* ---------- 题库 ---------- */
 function renderBrowse() {
   const src = state.filter.source || Object.keys(state.meta)[0];
+  const total = state.listTotal;
+  const ps = state.pageSize;
+  const pages = Math.max(1, Math.ceil(total / ps));
+  if (state.browsePage > pages) state.browsePage = pages;
+  const start = (state.browsePage - 1) * ps;
+  const slice = state.list.slice(start, start + ps);
   $('#main').innerHTML = renderFilters() + `
-  <div class="hint" style="margin-bottom:12px">共 <b>${state.listTotal}</b> 题${src ? ' · ' + esc(src) : ''}</div>
+  <div class="hint" style="margin-bottom:12px">共 <b>${total}</b> 题${src ? ' · ' + esc(src) : ''}</div>
   <div class="qlist">
-    ${state.list.map((q, i) => qCard(q, i)).join('') || emptyHtml('题库为空')}
-  </div>`;
+    ${slice.map((q, i) => qCard(q, start + i)).join('') || emptyHtml('题库为空')}
+  </div>
+  ${total > ps ? pagBar(total, state.browsePage, ps, 'setBrowsePage') : ''}`;
   // 恢复筛选状态（下拉框 / 搜索框）
   const sf = $('#f-src'); if (sf) sf.value = state.filter.source;
   const kw = $('#f-kw'); if (kw) kw.value = state.filter.kw;
+}
+function setBrowsePage(p) {
+  state.browsePage = Math.max(1, p);
+  renderBrowse();
 }
 
 function qCard(q, i) {
@@ -425,10 +472,15 @@ function renderQuiz() {
     ${isWrong ? `<span class="tag wrong" style="padding:4px 10px">错题重做</span><span class="hint">答对自动移出 · ${list.length} 题</span>`
                : `<select id="f-src" onchange="onFilterSrc(this.value)" style="max-width:200px">
                     ${sourceOptions()}
-                  </select>`}
+                  </select>
+                  <span class="hint" style="display:inline-flex;align-items:center;gap:5px">
+                    第<input id="jumpNo" type="number" min="1" placeholder="题号" style="width:64px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px" onkeydown="if(event.key==='Enter')jumpToNo()">题
+                    <button class="pill active" style="padding:3px 10px" onclick="jumpToNo()">跳转</button>
+                  </span>`}
     <div class="spacer"></div>
     <span class="hint">${i + 1} / ${list.length}</span>
   </div>
+  ${renderAnswerCard(list, i)}
   <div class="quiz-area">
     <div class="quiz-head">
       <span class="no" style="background:var(--primary-bg);color:var(--primary);font-weight:600;padding:2px 8px;border-radius:6px;font-size:12px">第${q.no}题</span>
@@ -466,6 +518,62 @@ function renderQuiz() {
   </div>`;
   if (!isWrong) { const sf = $('#f-src'); if (sf) sf.value = state.filter.source; }
   renderSetArea();
+}
+
+function renderAnswerCard(list, curIdxPos) {
+  const PER = 50;
+  const total = list.length;
+  const pages = Math.max(1, Math.ceil(total / PER));
+  if (state.cardPage > pages) state.cardPage = pages;
+  const start = (state.cardPage - 1) * PER;
+  const slice = list.slice(start, start + PER);
+  if (!state.cardOpen) {
+    // 收起态：居中一个下箭头条，点击展开
+    return `<div class="answer-card collapsed" onclick="toggleCard()">
+      <div class="card-head" style="justify-content:center">
+        <span class="card-toggle">▼ 展开答题卡</span>
+      </div>
+    </div>`;
+  }
+  const grid = slice.map((q, k) => {
+    const idx = start + k;
+    const cls = idx === curIdxPos ? 'active'
+      : q.last_correct === 1 ? 'done'
+      : q.last_correct === 0 ? 'wrong'
+      : q.attempted ? 'attempt' : '';
+    return `<button class="card-no ${cls}" onclick="jumpToIndex(${idx})">${q.no}</button>`;
+  }).join('');
+  return `
+  <div class="answer-card">
+    <div class="card-head">
+      <b style="font-size:14px">📋 答题卡</b>
+      <span class="legend">
+        <span><span class="dot" style="background:var(--green)"></span>已答对</span>
+        <span><span class="dot" style="background:var(--red)"></span>答错</span>
+        <span><span class="dot" style="background:var(--primary)"></span>已作答</span>
+      </span>
+    </div>
+    <div class="card-grid">${grid}</div>
+    <div class="card-foot">
+      <span class="hint">共 ${total} 题</span>
+      ${pages > 1 ? `<span style="display:inline-flex;gap:8px;align-items:center">
+        <button class="pill" ${state.cardPage <= 1 ? 'disabled' : ''} onclick="cardNav(-1)">←</button>
+        <span class="hint">${state.cardPage} / ${pages}</span>
+        <button class="pill" ${state.cardPage >= pages ? 'disabled' : ''} onclick="cardNav(1)">→</button>
+      </span>` : ''}
+    </div>
+    <div class="card-collapse" onclick="toggleCard()"><span class="card-toggle">▲ 收起答题卡</span></div>
+  </div>`;
+}
+function toggleCard() { state.cardOpen = !state.cardOpen; renderQuiz(); }
+function cardNav(d) {
+  state.cardPage += d;
+  renderQuiz();
+}
+function jumpToIndex(idx) {
+  if (idx < 0 || idx >= curList().length) return;
+  setCurIdx(idx);
+  renderQuiz();
 }
 
 function initialFeedback(q) {
@@ -634,17 +742,31 @@ async function loadWrong() {
   const d = await api('/api/wrong');
   state.wrongList = d.questions;   // 不覆盖刷题列表
   state.wrongIdx = 0;
+  state.wrongPage = 1;
+  renderWrongList(d.total);
+}
+function renderWrongList(total) {
+  const ps = state.pageSize;
+  const pages = Math.max(1, Math.ceil(total / ps));
+  if (state.wrongPage > pages) state.wrongPage = pages;
+  const start = (state.wrongPage - 1) * ps;
+  const slice = state.wrongList.slice(start, start + ps);
   $('#main').innerHTML = `
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <h2 style="font-size:18px">错题本 <span class="hint" style="font-weight:400">（最近一次作答错误的题目，重做答对后自动移出）</span></h2>
-    <span class="tag wrong">${d.total} 题</span>
+    <span class="tag wrong">${total} 题</span>
   </div>
-  ${d.total ? `<div style="margin-bottom:12px">
+  ${total ? `<div style="margin-bottom:12px">
     <button class="pill active" onclick="startWrongQuiz(0)" style="padding:7px 18px">▶ 重做全部错题</button>
   </div>` : ''}
   <div class="qlist">
-    ${d.questions.map((q, i) => wrongCard(q, i)).join('') || emptyHtml('太棒了，暂无错题 🎉')}
-  </div>`;
+    ${slice.map((q, i) => wrongCard(q, start + i)).join('') || emptyHtml('太棒了，暂无错题 🎉')}
+  </div>
+  ${total > ps ? pagBar(total, state.wrongPage, ps, 'setWrongPage') : ''}`;
+}
+function setWrongPage(p) {
+  state.wrongPage = Math.max(1, p);
+  renderWrongList(state.wrongList.length);
 }
 
 function startWrongQuiz(idx) {
@@ -740,8 +862,8 @@ function ansPick(k) {
 /* ---------- 统计 ---------- */
 async function loadStats() {
   const d = await api('/api/stats');
-  const rate = d.attempted ? Math.round(d.correct / d.attempted * 100) : 0;
-  const rows = Object.entries(d.by_source).map(([src, s]) => {
+  state.statsData = d;
+  state.statsRows = Object.entries(d.by_source).map(([src, s]) => {
     const r = s.attempted ? Math.round(s.correct / s.attempted * 100) : 0;
     const pct = s.attempted ? Math.round(s.attempted / s.total * 100) : 0;
     return `<tr>
@@ -757,7 +879,18 @@ async function loadStats() {
         </span>
       </td>
     </tr>`;
-  }).join('');
+  });
+  renderStats();
+}
+function renderStats() {
+  const d = state.statsData;
+  const rate = d.attempted ? Math.round(d.correct / d.attempted * 100) : 0;
+  const ps = state.pageSize;
+  const total = state.statsRows.length;
+  const pages = Math.max(1, Math.ceil(total / ps));
+  if (state.statsPage > pages) state.statsPage = pages;
+  const start = (state.statsPage - 1) * ps;
+  const rows = state.statsRows.slice(start, start + ps).join('');
   $('#main').innerHTML = `
   <div class="stats-cards">
     <div class="stat-card blue"><div class="num">${d.total}</div><div class="label">总题数</div></div>
@@ -770,7 +903,12 @@ async function loadStats() {
   <div class="stats-table"><table>
     <thead><tr><th>试卷</th><th>总题</th><th>已设答案</th><th>已作答</th><th>答对</th><th>进度</th><th>正确率</th><th>操作</th></tr></thead>
     <tbody>${rows}</tbody>
-  </table></div>`;
+  </table></div>
+  ${total > ps ? pagBar(total, state.statsPage, ps, 'setStatsPage') : ''}`;
+}
+function setStatsPage(p) {
+  state.statsPage = Math.max(1, p);
+  renderStats();
 }
 
 function confirmDeleteSource(src) {
